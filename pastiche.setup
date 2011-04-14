@@ -1,0 +1,8 @@
+;;; pastiche.setup -*- scheme -*-
+
+(compile -s -O3 -d1 -j pastiche pastiche.scm)
+(compile -s -O3 -d1 pastiche.import.scm)
+
+(install-extension 'pastiche
+                   '("pastiche.so" "pastiche.import.so")
+                   '((version 0.1)))
