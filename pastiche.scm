@@ -47,6 +47,7 @@
        (let ((stuff (sprintf "#chicken ~a posted \"~a\" ~a" nick title url)))
          (let-values (((i o) (tcp-connect "localhost" vandusen-port)))
            (display stuff o)
+           (newline o)
            (close-input-port i)
            (close-output-port o)))))
 
