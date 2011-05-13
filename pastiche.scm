@@ -21,6 +21,8 @@
 
 (define (pastiche base-path db-file
                   #!key (vandusen-port 22722)
+		        (vandusen-host "localhost")
+                        (base-url "http://paste.call-cc.org")
                         (awful-settings (lambda (_) (_))))
 
   (parameterize ((app-root-path base-path))
@@ -43,13 +45,15 @@
 
 
     (define (notify nick title url)
-      (ignore-errors
-       (let ((stuff (sprintf "#chicken ~a posted \"~a\" ~a" nick title url)))
-         (let-values (((i o) (tcp-connect "localhost" vandusen-port)))
-           (display stuff o)
-           (newline o)
-           (close-input-port i)
-           (close-output-port o)))))
+      (when vandusen-host
+	    (ignore-errors
+	     (let ((stuff (sprintf "#chicken ~a posted \"~a\" ~a"
+				   nick title (string-append base-url "/" url))))
+	       (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
+			   (display stuff o)
+			   (newline o)
+			   (close-input-port i)
+			   (close-output-port o))))))
 
     (define (fetch-last-pastes n)
       (let ((r ($db "select * from pastes order by time desc limit ?" values: (list n))))
@@ -81,10 +85,12 @@
                       ( "The title of your paste:" ,(text-input 'title) )
                       ( ,(++ "Your paste " (<i> "(mandatory)" " :"))
                         ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24))
-                      ("" ,(<input> name: "notify-irc"
+                      ("" ,(if vandusen-host
+			       (<input> name: "notify-irc"
                                     type: "checkbox"
                                     checked: "checked"
-                                    "Please notify the #chicken channel on freenode."))
+                                    "Please notify the #chicken channel on freenode.")
+			       ""))
                       ,(list (if annotate-id (hidden-input 'id annotate-id) "")
                              (submit-input value: "Submit paste!"))))
                    action: (make-pathname base-path "paste")
