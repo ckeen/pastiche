@@ -47,8 +47,8 @@
     (define (notify nick title url)
       (when vandusen-host
 	    (ignore-errors
-	     (let ((stuff (sprintf "#chicken ~a posted \"~a\" ~a"
-				   nick title (string-append base-url "/" url))))
+	     (let ((stuff (sprintf "#chicken ~s pasted ~s ~a"
+				   nick title (make-pathname base-url url))))
 	       (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
 			   (display stuff o)
 			   (newline o)
