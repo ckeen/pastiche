@@ -155,54 +155,62 @@
                                   (annotate ($ 'annotate)))
                          (cond ((fetch-paste id)
                                 => (lambda (p)
-                                     (++  (format-all-snippets p)
-                                          (<h2> "Your annotation:")
-                                          (paste-form annotate-id: id))))
+                                     (++ (format-all-snippets p)
+                                         (<h2> "Your annotation:")
+                                         (paste-form annotate-id: id))))
                                (else (bail-out "Found no paste to annotate with this id."))))
                        (++ (recent-pastes 10)
-                           (paste-form)))))))
+                           (paste-form))))))
+      title: "Pastiche: the Chicken Scheme pasting service")
 
     (define-page "paste"
       (lambda ()
-        (<div> id: "content"
-               (or (and-let* ((nick  (and ($ 'nick) (htmlize ($ 'nick))))
-                              (title (and ($ 'title) (htmlize ($ 'title))))
-                              (paste ($ 'paste))
-                              (time (current-seconds))
-                              (hashsum (string->sha1sum
-                                        (++ nick title (->string time) paste)))
-                              (url '())
-                              (snippet (map
-                                        (lambda (i)
-                                          (if (and (string? i) (string-null? i))
-                                              "anonymous"
-                                              i))
-                                        (list nick title time paste))))
-                     (if (string-null? paste)
-                         (bail-out "I am not storing empty pastes.")
-                         (begin (cond ((fetch-paste ($ 'id))
-                                       => (lambda (p)
-                                            (let ((count (length (cdr p))))
-                                              (update-paste ($ 'id) snippet)
-                                              (set! url (make-pathname
-                                                         base-path
-                                                         (++ "paste?id=" ($ 'id) "#" (->string count)))))))
-                                      (else (insert-paste hashsum snippet)
-                                            (set! url (++ "paste?id=" hashsum))))
-                                (when ($ 'notify-irc) (notify nick title url))
-                                (++  (<h1> "Thanks for your paste!")
-                                     "Hi " nick (<br>) "Thanks for pasting: " (<em> title) (<br>)
-                                     "Your paste can be reached with this url: " (link url url)))))
-                   (cond ((fetch-paste ($ 'id))
-                          => (lambda (p)
-                               (++
-                                (<h2> "Showing pastes for " ($ 'id))
-                                (format-all-snippets p)
-                                (<div> id: "paste-footer"
-                                       (<h2> (link (++ base-path "?id=" ($ 'id)
-                                                       ";annotate=t") "Add an annotation to this paste!"))))))
-                         (else (bail-out "Could not find a paste with this id:" ($ 'id)))))
-               (<p> (link base-path "Main page")))))
+        (with-request-variables ((nick (nonempty as-string))
+                                 (title (nonempty as-string))
+                                 paste
+                                 id)
+          (html-page
+           (<div> id: "content"
+                  (or (and-let* ((nick (and nick (htmlize nick)))
+                                 (title (and title (htmlize title)))
+                                 (time (current-seconds))
+                                 (hashsum (string->sha1sum
+                                           (++ nick title (->string time) paste)))
+                                 (url '())
+                                 (snippet (map
+                                           (lambda (i)
+                                             (if (and (string? i) (string-null? i))
+                                                 "anonymous"
+                                                 i))
+                                           (list nick title time paste))))
+                        (if (string-null? paste)
+                            (bail-out "I am not storing empty pastes.")
+                            (begin (cond ((fetch-paste id)
+                                          => (lambda (p)
+                                               (let ((count (length (cdr p))))
+                                                 (update-paste id snippet)
+                                                 (set! url (make-pathname
+                                                            base-path
+                                                            (++ "paste?id=" id "#" (->string count)))))))
+                                         (else (insert-paste hashsum snippet)
+                                               (set! url (++ "paste?id=" hashsum))))
+                                   (when ($ 'notify-irc) (notify nick title url))
+                                   (++  (<h1> "Thanks for your paste!")
+                                        "Hi " nick (<br>) "Thanks for pasting: " (<em> title) (<br>)
+                                        "Your paste can be reached with this url: " (link url url)))))
+                      (cond ((fetch-paste id)
+                             => (lambda (p)
+                                  (++
+                                   (<h2> "Showing pastes for " id)
+                                   (format-all-snippets p)
+                                   (<div> id: "paste-footer"
+                                          (<h2> (link (++ base-path "?id=" id
+                                                          ";annotate=t") "Add an annotation to this paste!"))))))
+                            (else (bail-out "Could not find a paste with this id:" id))))
+                  (<p> (link base-path "Main page")))
+           css: (page-css)
+           title: (conc "Pastes for " id))))
+      no-template: #t)
 
     (define-page "raw"
       (lambda ()
