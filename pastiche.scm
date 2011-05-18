@@ -16,13 +16,60 @@
      files
      posix
      data-structures
+     utils
+     extras
      (srfi 1 13))
 
 
+;;;
+;;; Captchas
+;;;
+(define-record captcha string figlet)
+
+(define (create-captchas num #!key (min-captcha-len 4) (max-captcha-len 8))
+  ;; returns an alist mapping captcha hashes to captcha records
+
+  (define chars '#(#\a #\b #\c #\d #\e #\f #\g #\h #\i #\j #\k #\l #\m
+                   #\n #\o #\p #\q #\r #\s #\t #\u #\v #\x #\y #\z))
+
+  (define random-captcha
+    (let ((chars-len (vector-length chars)))
+      (lambda ()
+        (list->string
+         (let loop ((n (+ min-captcha-len
+                          (random (- max-captcha-len
+                                     min-captcha-len)))))
+           (if (zero? n)
+               '()
+               (cons (vector-ref chars (random chars-len))
+                     (loop (- n 1)))))))))
+
+  (define (figlet str)
+    (call-with-input-pipe (string-append "figlet " str) read-all))
+
+  (let loop ((n (sub1 num)))
+    (if (zero? n)
+        '()
+        (let ((captcha-string (random-captcha)))
+          (cons
+           (cons (string->sha1sum captcha-string)
+                 (make-captcha captcha-string
+                               (figlet captcha-string)))
+           (loop (- n 1)))))))
+
+(define (get-captcha captchas)
+  (list-ref captchas (random (length captchas))))
+
+
+;;;
+;;; Pastiche
+;;;
 (define (pastiche base-path db-file
                   #!key (vandusen-port 22722)
 		        (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
+                        (use-captcha? #t)
+                        (num-captchas 500)
                         (awful-settings (lambda (_) (_))))
 
   (parameterize ((app-root-path base-path))
@@ -36,6 +83,19 @@
                         (db-credentials db-file)
                         (page-css "http://wiki.call-cc.org/chicken.css"))
            (awful-settings handler)))))
+
+    (define captchas (and use-captcha? (create-captchas num-captchas)))
+
+    (define figlet-installed?
+      (handle-exceptions exn
+        #f
+        (system* "figlet -v 2>&1 > /dev/null")))
+
+    (when (and use-captcha? (not figlet-installed?))
+      (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
+             "doesn't seem to be installed. Disabling captchas.")
+      (set! use-captcha? #f))
+
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
@@ -78,23 +138,35 @@
              (make-post-table n)))
 
     (define (paste-form #!key annotate-id)
-      (<div> class: "paste-form"
-             (<h2> "Enter a new " (if annotate-id " annotation:" " paste:"))
-             (form (tabularize
-                    `(( "Your nick: " ,(text-input 'nick))
-                      ( "The title of your paste:" ,(text-input 'title) )
-                      ( ,(++ "Your paste " (<i> "(mandatory)" " :"))
-                        ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24))
-                      ("" ,(if vandusen-host
-			       (<input> name: "notify-irc"
-                                    type: "checkbox"
-                                    checked: "checked"
-                                    "Please notify the #chicken channel on freenode.")
-			       ""))
-                      ,(list (if annotate-id (hidden-input 'id annotate-id) "")
-                             (submit-input value: "Submit paste!"))))
-                   action: (make-pathname base-path "paste")
-                   method: "post")))
+      (let* ((hash/captcha (and use-captcha? (get-captcha captchas)))
+             (captcha-hash (and use-captcha? (car hash/captcha)))
+             (captcha (and use-captcha? (cdr hash/captcha))))
+        (<div> class: "paste-form"
+               (<h2> "Enter a new " (if annotate-id " annotation:" " paste:"))
+               (form
+                (++ (if use-captcha?
+                        (hidden-input 'captcha-hash captcha-hash)
+                        "")
+                    (tabularize
+                     (append
+                      `(( "Your nick: " ,(text-input 'nick))
+                        ( "The title of your paste:" ,(text-input 'title) ))
+                      (if use-captcha?
+                          `(( "Type the text below:" ,(text-input 'captcha-user-answer))
+                            ("" ,(<pre> id: "captcha" (captcha-figlet captcha))))
+                          '())
+                      `(( ,(++ "Your paste " (<i> "(mandatory)" " :"))
+                          ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24))
+                        ("" ,(if vandusen-host
+                                 (<input> name: "notify-irc"
+                                          type: "checkbox"
+                                          checked: "checked"
+                                          "Please notify the #chicken channel on freenode.")
+                                 ""))
+                        ,(list (if annotate-id (hidden-input 'id annotate-id) "")
+                               (submit-input value: "Submit paste!"))))))
+                action: (make-pathname base-path "paste")
+                method: "post"))))
 
     (define (fetch-paste id)
       (and id
@@ -183,21 +255,27 @@
                                                  "anonymous"
                                                  i))
                                            (list nick title time paste))))
-                        (if (string-null? paste)
-                            (bail-out "I am not storing empty pastes.")
-                            (begin (cond ((fetch-paste id)
-                                          => (lambda (p)
-                                               (let ((count (length (cdr p))))
-                                                 (update-paste id snippet)
-                                                 (set! url (make-pathname
-                                                            base-path
-                                                            (++ "paste?id=" id "#" (->string count)))))))
-                                         (else (insert-paste hashsum snippet)
-                                               (set! url (++ "paste?id=" hashsum))))
-                                   (when ($ 'notify-irc) (notify nick title url))
-                                   (++  (<h1> "Thanks for your paste!")
-                                        "Hi " nick (<br>) "Thanks for pasting: " (<em> title) (<br>)
-                                        "Your paste can be reached with this url: " (link url url)))))
+                        (if (and use-captcha?
+                                 (not (equal? ($ 'captcha-user-answer)
+                                              (and-let* ((hash ($ 'captcha-hash))
+                                                         (captcha (alist-ref hash captchas equal?)))
+                                                (captcha-string captcha)))))
+                            (bail-out "Wrong captcha answer.")
+                            (if (string-null? paste)
+                                (bail-out "I am not storing empty pastes.")
+                                (begin (cond ((fetch-paste id)
+                                              => (lambda (p)
+                                                   (let ((count (length (cdr p))))
+                                                     (update-paste id snippet)
+                                                     (set! url (make-pathname
+                                                                base-path
+                                                                (++ "paste?id=" id "#" (->string count)))))))
+                                             (else (insert-paste hashsum snippet)
+                                                   (set! url (++ "paste?id=" hashsum))))
+                                       (when ($ 'notify-irc) (notify nick title url))
+                                       (++  (<h1> "Thanks for your paste!")
+                                            "Hi " nick (<br>) "Thanks for pasting: " (<em> title) (<br>)
+                                            "Your paste can be reached with this url: " (link url url))))))
                       (cond ((fetch-paste id)
                              => (lambda (p)
                                   (++
