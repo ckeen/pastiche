@@ -234,15 +234,16 @@
 
     (define-page "paste"
       (lambda ()
-        (with-request-variables ((nick  as-string)
-                                 (title as-string)
+        (with-request-variables ((nick  (nonempty as-string))
+                                 (title (nonempty as-string))
                                  paste
                                  id)
           (html-page
            (<div> id: "content"
                   (or (and-let* ((nick (or (and nick (htmlize nick)) "anonymous"))
-                                 (title (or (and title (htmlize title)) ""))
+                                 (title (or (and title (htmlize title)) "no title"))
                                  (time (current-seconds))
+				 (paste paste)
                                  (hashsum (string->sha1sum
                                            (++ nick title (->string time) paste)))
                                  (url '())
