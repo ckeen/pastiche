@@ -84,8 +84,6 @@
                         (page-css "http://wiki.call-cc.org/chicken.css"))
            (awful-settings handler)))))
 
-    (define captchas (and use-captcha? (create-captchas num-captchas)))
-
     (define figlet-installed?
       (handle-exceptions exn
         #f
@@ -96,6 +94,7 @@
              "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
 
+    (define captchas (and use-captcha? (create-captchas num-captchas)))
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
@@ -150,14 +149,14 @@
                     (tabularize
                      (append
                       `(( "Your nick: " ,(text-input 'nick))
-                        ( "The title of your paste:" ,(text-input 'title) ))
-                      (if use-captcha?
-                          `(( "Type the text below:" ,(text-input 'captcha-user-answer))
+                        ( "The title of your paste:" ,(text-input 'title) )
+			( ,(++ "Your paste " (<i> "(mandatory)" " :"))
+                          ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24)))
+			(if use-captcha?
+                          `(( "Type in the text below:" ,(text-input 'captcha-user-answer))
                             ("" ,(<pre> id: "captcha" (captcha-figlet captcha))))
                           '())
-                      `(( ,(++ "Your paste " (<i> "(mandatory)" " :"))
-                          ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24))
-                        ("" ,(if vandusen-host
+                        `(("" ,(if vandusen-host
                                  (<input> name: "notify-irc"
                                           type: "checkbox"
                                           checked: "checked"
@@ -189,8 +188,7 @@
           (<div> id: "failure-reason" (fold (lambda (i r)
                                               (++ r (sprintf "~a" i)))
                                             "" reasons))
-          "I am sorry for his, you "
-          (link base-path "better go back.")))
+          "I am sorry for his, you better go back."))
 
 
     (define (print-snippet s #!key annotation? (count 0))
