@@ -169,8 +169,7 @@
 
     (define (fetch-paste id)
       (and id
-           (let ((r ($db "select * from pastes where hash=? order by time desc" values: (list id))))
-             (or (null? r) r))))
+           ($db "select * from pastes where hash=? order by time desc" values: (list id))))
 
     (define (update-paste id snippet)
       (insert-paste id snippet))
