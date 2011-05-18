@@ -241,8 +241,7 @@
                                  id)
           (html-page
            (<div> id: "content"
-                  (or (and-let* ((nick (if (not (equal? "" nick))
-					   (htmlize nick) "anonymous"))
+                  (or (and-let* ((nick (or (and nick (htmlize nick)) "anonymous"))
                                  (title (and title (htmlize title)))
                                  (time (current-seconds))
                                  (hashsum (string->sha1sum
