@@ -241,7 +241,7 @@
           (html-page
            (<div> id: "content"
                   (or (and-let* ((nick (or (and nick (htmlize nick)) "anonymous"))
-                                 (title (or (and title (htmlize title)) "")
+                                 (title (or (and title (htmlize title)) ""))
                                  (time (current-seconds))
                                  (hashsum (string->sha1sum
                                            (++ nick title (->string time) paste)))
