@@ -123,7 +123,7 @@
         (list (second r)                ; Nickname
               (link (make-pathname base-path (string-append "/paste?id=" (first r)))
                     (third r))             ; title
-              (seconds->string (fourth r)))) ;date
+              (prettify-time (fourth r)))) ;date
 
       (<div> class: "paste-table"
              (or
@@ -199,12 +199,27 @@
                                             "" reasons))
           "I am sorry for his, you better go back."))
 
+    (define (prettify-time t)
+      (let* ((delta (- (current-seconds) t))
+	     (fits
+	      (lambda (d l)
+		(let ((r (inexact->exact (floor (/ delta d)))))
+		  (print "delta " delta " d " d " l " l " r " r)
+		  (if (and (< 0 r) (>= l r)) r #f)))))
+	(cond ((fits (* 60 60 24) 3) =>
+	       (lambda (d) (sprintf "~a days ago" d)))
+	      ((fits (* 60 60) 24) =>
+	       (lambda (hrs)
+		 (sprintf "~a hours ago" hrs)))
+	      ((fits 60 (* 60 5)) => (lambda (m) (sprintf "~a minutes ago" m)))
+	      ((fits 1 120) => (lambda (_) (sprintf "just now!")))
+	      (else (sprintf "on ~a" (seconds->string t))))))
 
     (define (print-snippet s #!key annotation? (count 0))
       (++ (<div> class: "paste-header"
                  (<h3> (<a> name: (if annotation? (->string count) "") (third s)))
-                 (if annotation? " added " " pasted ") " by " (second s)
-                 " on " (seconds->string (fourth s)))
+                 (if annotation? " added " " pasted ") (second s) " "
+                 (prettify-time (fourth s)))
           (<div> class: "paste"
                  (<pre> (<tt> class: "highlight scheme-language" (html-colorize 'scheme (fifth s)))))
           (<div> class: "paste-footer"
@@ -255,7 +270,7 @@
 		   (or (and-let* ((nick (or (and nick (htmlize nick)) "anonymous"))
 				  (title (or (and title (htmlize title)) "no title"))
 				  (time (current-seconds))
-				  (paste paste)
+				  (paste (and (not (equal? "" paste)) paste))
 				  (hashsum (string->sha1sum
 					    (++ nick title (->string time) paste)))
 				  (url '())
@@ -313,7 +328,7 @@
 
     (define (number-of-posts)
       (let ((n ($db "select count(hash) from pastes")))
-	(and n (caar n))))
+	(and n (caar n))))    
 
     (define-page "browse"
       (lambda ()
