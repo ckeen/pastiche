@@ -320,9 +320,9 @@
 	(with-request-variables
 	 ((from as-number)
 	  (to as-number))
-	 (let* ((from (or from 0))
-		(to (or to browsing-steps))
-		(nposts (number-of-posts))
+	 (let* ((nposts (number-of-posts))
+		(from (if (and from (>= from 0) (<= from nposts)) from 0))
+		(to (if (and to (> to from) (<= to nposts)) to browsing-steps))
 		(older-to (min (+ to browsing-steps) nposts))
 		(older-from (+ from browsing-steps))
 		(newer-from (- from browsing-steps))
