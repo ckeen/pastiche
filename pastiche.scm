@@ -177,8 +177,9 @@
                 method: "post"))))
 
     (define (fetch-paste id)
-      (and id
-           ($db "select * from pastes where hash=? order by time desc" values: (list id))))
+      (let ((r ($db "select * from pastes where hash=? order by time desc" values: (list id))))
+	(and id
+	     (and (not (null? r)) r))))
 
     (define (update-paste id snippet)
       (insert-paste id snippet))
