@@ -70,19 +70,20 @@
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
                         (num-captchas 500)
+			(browsing-steps 15)
                         (awful-settings (lambda (_) (_))))
 
   (parameterize ((app-root-path base-path))
 
-    (add-request-handler-hook!
-     'awful-paste
-     (lambda (path handler)
-       (when (string-prefix? base-path path)
-         (switch-to-sql-de-lite-database)
-         (parameterize ((app-root-path base-path)
-                        (db-credentials db-file)
-                        (page-css "http://wiki.call-cc.org/chicken.css"))
-           (awful-settings handler)))))
+		(add-request-handler-hook!
+		 'awful-paste
+		 (lambda (path handler)
+		   (when (string-prefix? base-path path)
+			 (switch-to-sql-de-lite-database)
+			 (parameterize ((app-root-path base-path)
+					(db-credentials db-file)
+					(page-css "http://wiki.call-cc.org/chicken.css"))
+				       (awful-settings handler)))))
 
     (define figlet-installed?
       (handle-exceptions exn
@@ -102,7 +103,6 @@
         (exec (sql db "create table pastes(hash text, author text, title text, time float, paste text)"))
         (close-database db)))
 
-
     (define (notify nick title url)
       (when vandusen-host
 	    (ignore-errors
@@ -114,11 +114,11 @@
 			   (close-input-port i)
 			   (close-output-port o))))))
 
-    (define (fetch-last-pastes n)
-      (let ((r ($db "select * from pastes order by time desc limit ?" values: (list n))))
+    (define (fetch-last-pastes from to)
+      (let ((r ($db "select * from pastes order by time desc limit ?,?" values: (list from to))))
         r))
 
-    (define (make-post-table n)
+    (define (make-post-table n #!optional (from 0))
       (define (format-row r)
         (list (second r)                ; Nickname
               (link (make-pathname base-path (string-append "/paste?id=" (first r)))
@@ -127,10 +127,19 @@
 
       (<div> class: "paste-table"
              (or
-              (tabularize (map format-row (fetch-last-pastes n))
+              (tabularize (map format-row (fetch-last-pastes from n))
                           header: '("Nickname" "Title" "Date"))
               (<p> "No pastes so far."))))
 
+    (define (navigation-links)
+      (<div> id: "menu"
+	     (<ul>
+	      (apply ++ (map (lambda (m)
+			       (<li> (link (make-pathname base-path (car m))
+					   (cdr m))))
+			     '(("" . "New Paste")
+			       ("browse" . "Browse pastes")))))))
+    
     (define (recent-pastes n)
       (<div> class: "paste-list"
              (<h2> "The last " n " pastes so far: ")
@@ -218,18 +227,19 @@
 
     (define-page "/" ;; the main page, prefixed by base-path
       (lambda ()
-        (<div> id: "content" (<h1> id: "heading" "Welcome to the chicken scheme pasting service")
-               (<p> id: "subheading" (<small> "Home of lost parentheses"))
-               (++ (or (and-let* ((id ($ 'id))
-                                  (annotate ($ 'annotate)))
-                         (cond ((fetch-paste id)
-                                => (lambda (p)
-                                     (++ (format-all-snippets p)
-                                         (<h2> "Your annotation:")
-                                         (paste-form annotate-id: id))))
-                               (else (bail-out "Found no paste to annotate with this id."))))
-                       (++ (recent-pastes 10)
-                           (paste-form))))))
+        (++ 
+	 (<div> id: "content" (<h1> id: "heading" "Welcome to the chicken scheme pasting service")
+		(<p> id: "subheading" (<small> "Home of lost parentheses"))
+		(++ (or (and-let* ((id ($ 'id))
+				   (annotate ($ 'annotate)))
+				  (cond ((fetch-paste id)
+					 => (lambda (p)
+					      (++ (format-all-snippets p)
+						  (<h2> "Your annotation:")
+						  (paste-form annotate-id: id))))
+					(else (bail-out "Found no paste to annotate with this id."))))
+			(paste-form))))
+	 (navigation-links)))
       title: "Pastiche: the Chicken Scheme pasting service")
 
     (define-page "paste"
@@ -299,4 +309,37 @@
               (++ (bail-out "Could not find a paste with id " id)
                   (<p> (link base-path "Main page"))))))
       no-template: #t)
-    )))
+
+    (define (number-of-posts)
+      (let ((n ($db "select count(hash) from pastes")))
+	(and n (caar n))))
+
+    (define-page "browse"
+      (lambda ()
+	(with-request-variables
+	 ((from as-number)
+	  (to as-number))
+	 (let* ((from (or from 0))
+		(to (or to browsing-steps))
+		(nposts (number-of-posts))
+		(older-to (min (+ to browsing-steps) nposts))
+		(older-from (+ from browsing-steps))
+		(newer-from (- from browsing-steps))
+		(newer-to (max (- to browsing-steps) browsing-steps))
+		(history-path (make-pathname base-path "browse")))
+	   (html-page
+	    (++ (<div> id: "content"
+		       (<h2> align: "center" "Browsing pastes from " from " to " to " of " nposts)
+		       (make-post-table to from)
+		       (<div> id: "browse-navigation"
+			      align: "center"
+			      (if (>= newer-from 0) (link  (sprintf "~a?from=~a;to=~a" history-path newer-from newer-to)
+							   "< newer")
+				  "< newer")
+			      " ... "
+			      (if (and (not (= to nposts)) (<= older-to nposts))
+				  (link (sprintf "~a?from=~a;to=~a" history-path older-from older-to)
+					"older >")
+				  "older >")))
+		(navigation-links))))))))))
+
