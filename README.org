@@ -7,9 +7,10 @@ simple SQL backend (sqlite).
 * Installation
 
 Using a recent CHICKEN scheme version (>4.6.0), do
- git clone git://github.com/ckeen/pastiche.git
- cd pastiche
- chicken-install -s
+
+ $ git clone git://github.com/ckeen/pastiche.git
+ $ cd pastiche
+ $ chicken-install -s
 
 This will fetch all dependencies and installs pastiche and awful.
 To run it load the example-app in awful:
