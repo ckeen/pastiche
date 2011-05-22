@@ -345,8 +345,7 @@
 		(history-path (make-pathname base-path "browse")))
 	   (html-page
 	    (++ (<div> id: "content"
-		       (<h2> align: "center" "Browsing pastes from " from " to " to " of " nposts)
-		       (make-post-table to from)
+		       (<h2> align: "center" "Browsing pastes")
 		       (<div> id: "browse-navigation"
 			      align: "center"
 			      (if (>= newer-from 0) (link  (sprintf "~a?from=~a;to=~a" history-path newer-from newer-to)
@@ -356,7 +355,8 @@
 			      (if (and (not (= to nposts)) (<= older-to nposts))
 				  (link (sprintf "~a?from=~a;to=~a" history-path older-from older-to)
 					"older >")
-				  "older >")))
+				  "older >"))
+		       (make-post-table to from))
 		(navigation-links)))))))
     (define-page "about"
       (lambda ()
