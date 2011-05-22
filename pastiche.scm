@@ -204,7 +204,6 @@
 	     (fits
 	      (lambda (d l)
 		(let ((r (inexact->exact (floor (/ delta d)))))
-		  (print "delta " delta " d " d " l " l " r " r)
 		  (if (and (< 0 r) (>= l r)) r #f)))))
 	(cond ((fits (* 60 60 24) 3) =>
 	       (lambda (d) (sprintf "~a days ago" d)))
