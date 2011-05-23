@@ -198,7 +198,7 @@
           (<div> id: "failure-reason" (fold (lambda (i r)
                                               (++ r (sprintf "~a" i)))
                                             "" reasons))
-          "I am sorry for his, you better go back."))
+          "I am sorry for this, you better go back."))
 
     (define (prettify-time t)
       (let* ((delta (- (current-seconds) t))
@@ -365,7 +365,7 @@
 		    (<h2> "You have reached the CHICKEN scheme pasting service")
 		    (<p> (htmlize "These pages are maintained by the CHICKEN scheme
                       project team. Anyone that enters a correct CAPTCHA response is allowed
-                      to post anything he likes. If you find objectionable content, fell
+                      to post anything he likes. If you find objectionable content, feel
                       free to drop a mail at chicken-janitors <at> nongnu dot org"))
 		    (<p> "The source code for these pages is
                           distributed under a BSD license at C-Keen's "
