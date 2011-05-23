@@ -296,11 +296,11 @@
 									 base-path
 									 (++ "paste?id=" id "#" (->string count)))))))
 						      (else (insert-paste hashsum snippet)
-							    (set! url (++ "paste?id=" hashsum))))
+							    (set! url (make-pathname base-path (++ "paste?id=" hashsum)))))
 						(when ($ 'notify-irc) (notify nick title url))
-						(++  (<h1> "Thanks for your paste!")
-						     "Hi " nick (<br>) "Thanks for pasting: " (<em> title) (<br>)
-						     "Your paste can be reached with this url: " (link url url))))))
+						(++  (<h2> align: "center" "Thanks for your paste!")
+						     (<p> "Hi " nick ", thanks for pasting: " (<em> title) (<br>))
+						     (<p> align: "center") "Your paste can be reached with this url: " (link url url))))))
 		       (cond ((fetch-paste id)
 			      => (lambda (p)
 				   (++
