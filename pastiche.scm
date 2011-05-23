@@ -237,7 +237,7 @@
       (fold (let ((c (length snippets)))
               (lambda (p s)
                 (set! c (sub1 c))
-                (++ (print-snippet p annotation?: (not (= c (- (length (car snippets)) 1))) count: c) s)))
+                (++ (print-snippet p annotation?: (= c (- (length snippets) 1)) count: c) s)))
             ""
             snippets))
 
