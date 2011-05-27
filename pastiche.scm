@@ -218,7 +218,7 @@
     (define (print-snippet s #!key annotation? (count 0))
       (++ (<div> class: "paste-header"
                  (<h3> (<a> name: (if annotation? (->string count) "") (third s)))
-                 (if annotation? " added " " pasted ") (second s) " "
+                 (if annotation? " added " " pasted ") " by " (second s) " "
                  (prettify-time (fourth s)))
           (<div> class: "paste"
                  (<pre> (<tt> class: "highlight scheme-language" (html-colorize 'scheme (fifth s)))))
