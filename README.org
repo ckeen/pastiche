@@ -1,19 +1,23 @@
 * Pastiche -- a pastebin service written for CHICKEN Scheme
 
-This is a paste bin service similar to [[http://www.cliki.net/lisppaste][lisppaste]]. It supports IRC
-notification (for us that means the [[http://wiki.call-cc.org/eggref/4/vandusen][vandusen]] bot) and is backed by a
-simple SQL backend (sqlite).
+This is a version of the originally SQLite backed pastiche which is
+backed by redis as its data store.
 
 * Installation
 
 Using a recent CHICKEN scheme version (>4.6.0), do
 
- 1. git clone git://github.com/ckeen/pastiche.git
- 2. cd pastiche
+ 1. git clone git://gitorious.org/chicken-eggs/redis.git
+ 2. cd redis
  3. chicken-install -s
+ 4. git clone git://github.com/ckeen/pastiche.git
+ 5. cd pastiche
+ 6. git checkout -b redis origin/redis
+ 7. chicken-install -s
 
-This will fetch all dependencies and installs pastiche and awful.
-To run it load the example-app in awful:
+This will fetch all dependencies and installs pastiche, redis and
+awful. Adjust the redis.conf and example-app.scm file to your
+needs. To run it load the example-app in awful:
 
  $ awful --development-mode example-app
 
