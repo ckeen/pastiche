@@ -117,7 +117,7 @@
       (reverse
        (map (lambda (p)
               (deserialize (redis-list-ref (redis-connection) (car p) (cdr p))))
-            (map deserialize (redis-list-range (redis-connection) 'pastes from to)))))
+            (map deserialize (redis-list-range (redis-connection) 'pastes from (- to 1))))))
 
     (define (make-post-table n #!optional (from 0))
       (define (format-row r)
