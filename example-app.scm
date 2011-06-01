@@ -1,6 +1,7 @@
 (use awful pastiche)
 
-(pastiche "/" "paste.db"
+(pastiche "/" 
+          redis-settings: '(socket: "redis.sock")
           awful-settings:
           (lambda (handler)
             (parameterize

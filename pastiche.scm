@@ -8,16 +8,15 @@
      html-tags
      miscmacros
      simple-sha1
-     sql-de-lite
      spiffy
+     redis
      tcp
-     awful-sql-de-lite
-     sql-de-lite
      files
      posix
      data-structures
      utils
      extras
+     ports
      (srfi 1 13))
 
 
@@ -60,28 +59,31 @@
 (define (get-captcha captchas)
   (list-ref captchas (random (length captchas))))
 
+(define redis-connection (make-parameter #f))
+
+(define (serialize x) (with-output-to-string (lambda () (write x))))
+(define (deserialize x) (and x (with-input-from-string x read)))
 
 ;;;
 ;;; Pastiche
 ;;;
-(define (pastiche base-path db-file
+(define (pastiche base-path
                   #!key (vandusen-port 22722)
 		        (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
                         (num-captchas 500)
 			(browsing-steps 15)
+                        (redis-settings '())
                         (awful-settings (lambda (_) (_))))
 
   (parameterize ((app-root-path base-path))
-
 		(add-request-handler-hook!
 		 'awful-paste
 		 (lambda (path handler)
 		   (when (string-prefix? base-path path)
-			 (switch-to-sql-de-lite-database)
-			 (parameterize ((app-root-path base-path)
-					(db-credentials db-file)
+			 (parameterize ((redis-connection (apply redis-connect redis-settings))
+                                        (app-root-path base-path) 
 					(page-css "http://wiki.call-cc.org/chicken.css"))
 				       (awful-settings handler)))))
 
@@ -97,12 +99,6 @@
 
     (define captchas (and use-captcha? (create-captchas num-captchas)))
 
-    ;; The database needs to be initialised once
-    (unless (file-exists? db-file)
-      (let ((db (open-database db-file)))
-        (exec (sql db "create table pastes(hash text, author text, title text, time float, paste text)"))
-        (close-database db)))
-
     (define (notify nick title url)
       (when vandusen-host
 	    (ignore-errors
@@ -114,9 +110,14 @@
 			   (close-input-port i)
 			   (close-output-port o))))))
 
+    (define (fetch-paste id)
+      (and id (map deserialize (redis-list-range (redis-connection) id 0 -1))))
+
     (define (fetch-last-pastes from to)
-      (let ((r ($db "select * from pastes order by time desc limit ?,?" values: (list from to))))
-        r))
+      (reverse
+       (map (lambda (p)
+              (deserialize (redis-list-ref (redis-connection) (car p) (cdr p))))
+            (map deserialize (redis-list-range (redis-connection) 'pastes from to)))))
 
     (define (make-post-table n #!optional (from 0))
       (define (format-row r)
@@ -177,21 +178,12 @@
                 action: (make-pathname base-path "paste")
                 method: "post"))))
 
-    (define (fetch-paste id)
-      (and id
-	   (let ((r ($db "select * from pastes where hash=? order by time desc" values: (list id))))
-	     (and (not (null? r)) r))))
-
-    (define (update-paste id snippet)
-      (insert-paste id snippet))
 
     (define (insert-paste id paste)
-      (let ((author (first paste))
-            (title (second paste))
-            (time (third paste))
-            (paste (fourth paste)))
-        ($db "insert into pastes (hash, author, title, time, paste) values (?,?,?,?,?)"
-             values: (list id author title time paste))))
+      (let ((i (redis-list-push-right! (redis-connection) id (serialize (cons id paste)))))
+        (redis-list-push! (redis-connection) 'pastes (serialize (cons id (- i 1))))))
+
+    (define update-paste insert-paste)
 
     (define (bail-out . reasons)
       (++ (<h1> "Ooops, something went wrong") (<br>)
@@ -327,8 +319,7 @@
       no-template: #t)
 
     (define (number-of-posts)
-      (let ((n ($db "select count(hash) from pastes")))
-	(and n (caar n))))    
+      (redis-list-length (redis-connection) 'pastes))    
 
     (define-page "browse"
       (lambda ()
