@@ -294,7 +294,7 @@
 							      (update-paste id snippet)
 							      (set! url (make-pathname
 									 base-path
-									 (++ "paste?id=" id "#" (->string count)))))))
+									 (++ "paste?id=" id "#a" (->string count)))))))
 						      (else (insert-paste hashsum snippet)
 							    (set! url (make-pathname base-path (++ "paste?id=" hashsum)))))
 						(when ($ 'notify-irc) (notify nick title url))
