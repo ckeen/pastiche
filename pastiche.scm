@@ -225,7 +225,7 @@
           (<div> class: "paste-footer"
                  " [ "
                  (link (make-pathname base-path
-                                      (string-append "paste?id=" (first s) "#" (->string count)))
+                                      (string-append "paste?id=" (first s) "#a" (->string count)))
                        "permalink")
                  " | "
                  (link (make-pathname base-path
