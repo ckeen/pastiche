@@ -114,8 +114,9 @@
 			   (close-input-port i)
 			   (close-output-port o))))))
 
+; old "select * from pastes order by time desc limit ?,?"
     (define (fetch-last-pastes from to)
-      (let ((r ($db "select * from pastes order by time desc limit ?,?" values: (list from to))))
+      (let ((r ($db "select * from pastes p where time = (select min(time) from pastes p2 where p2.hash=p.hash) order by time desc limit ?,?" values: (list from to))))
         r))
 
     (define (make-post-table n #!optional (from 0))
