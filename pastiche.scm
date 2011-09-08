@@ -217,7 +217,7 @@
 
     (define (print-snippet s #!key annotation? (count 0))
       (++ (<div> class: "paste-header"
-                 (<h3> (<a> name: (if annotation? (->string count) "") (third s)))
+                 (<h3> (<a> name: (sprintf "a~A" count) (third s)))
                  (if annotation? " added " " pasted ") " by " (second s) " "
                  (prettify-time (fourth s)))
           (<div> class: "paste"
@@ -290,7 +290,7 @@
 					 (bail-out "I am not storing empty pastes.")
 					 (begin (cond ((fetch-paste id)
 						       => (lambda (p)
-							    (let ((count (length (cdr p))))
+							    (let ((count (+ 1 (length (cdr p)))))
 							      (update-paste id snippet)
 							      (set! url (make-pathname
 									 base-path
