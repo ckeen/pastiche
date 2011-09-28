@@ -15,6 +15,7 @@
      awful-sql-de-lite
      sql-de-lite
      files
+     ports
      posix
      data-structures
      utils
