@@ -5,6 +5,7 @@
 (use awful
      colorize
      html-utils
+     html-parser
      html-tags
      miscmacros
      simple-sha1
@@ -105,14 +106,16 @@
 
     (define (notify nick title url)
       (when vandusen-host
+        (let ((cleaned-nick (with-input-from-string nick html-strip))
+              (cleaned-title (with-input-from-string title html-strip)))
 	    (ignore-errors
 	     (let ((stuff (sprintf "#chicken ~s pasted ~s ~a"
-				   nick title (make-pathname base-url url))))
+				   cleaned-nick cleaned-title (make-pathname base-url url))))
 	       (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
 			   (display stuff o)
 			   (newline o)
 			   (close-input-port i)
-			   (close-output-port o))))))
+			   (close-output-port o)))))))
 
 ; old "select * from pastes order by time desc limit ?,?"
     (define (fetch-last-pastes from to)
