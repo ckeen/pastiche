@@ -263,7 +263,7 @@
 	 (navigation-links)))
       title: "Pastiche: the Chicken Scheme pasting service")
 
-    (define-page "paste"
+    (define handle-paste
       (lambda ()
         (let ((paste-title "Untitled paste"))
           (with-request-variables ((nick  (nonempty as-string))
@@ -320,8 +320,10 @@
                                                      (else (bail-out "Could not find a paste with this id:" id)))))
                                     (navigation-links))
                                    css: (page-css)
-                                   title: paste-title))))
-      no-template: #t)
+                                   title: paste-title)))))
+
+    (define-page "paste" handle-paste method: 'POST no-template: #t)
+    (define-page "paste" handle-paste method: 'GET no-template: #t)
 
     (define-page "raw"
       (lambda ()
