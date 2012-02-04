@@ -20,6 +20,7 @@
      data-structures
      utils
      extras
+     irregex
      (srfi 1 13))
 
 
@@ -325,14 +326,26 @@
     (define-page "paste" handle-paste method: 'POST no-template: #t)
     (define-page "paste" handle-paste method: 'GET no-template: #t)
 
+    (define (convert-newlines text mode)
+      (and text
+           (irregex-replace/all "\r\n"
+                                text
+                                (case mode
+                                  ((#:unix) "\n")
+                                  ((#:dos) "\r\n")
+                                  (else (error "unknown newline mode " mode))))))
+
     (define-page "raw"
       (lambda ()
         (awful-response-headers '((content-type "text/plain")))
         (let* ((id ($ 'id))
                (annotation ($ 'annotation as-number))
                (paste (fetch-paste id)))
-          (or (and paste annotation (<= annotation (length paste)) (fifth (list-ref (reverse paste) annotation)))
-              paste
+          (or (and paste
+                   annotation
+                   (<= annotation (length paste))
+                   (convert-newlines (fifth (list-ref (reverse paste) annotation)) #:unix))
+              (convert-newlines paste #:unix)
               (bail-out "Could not find a paste with id " id))))
       no-template: #t)
 
