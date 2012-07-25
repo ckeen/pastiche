@@ -381,25 +381,25 @@
 				  "older >"))
 		       (make-post-table to from))
 		(navigation-links)))))))
+
     (define-page "about"
       (lambda ()
-	(html-page
-	 (++ (<div> id: "content"
-		    (<h2> "You have reached the CHICKEN scheme pasting service")
-		    (<p> (htmlize "These pages are maintained by the CHICKEN scheme
+        (++ (<div> id: "content"
+                   (<h2> "You have reached the CHICKEN scheme pasting service")
+                   (<p> (htmlize "These pages are maintained by the CHICKEN scheme
                       project team. Anyone that enters a correct CAPTCHA response is allowed
                       to post anything he likes. If you find objectionable content, feel
                       free to drop a mail at chicken-janitors <at> nongnu dot org"))
-		    (<p> "The source code for these pages is
+                   (<p> "The source code for these pages is
                           distributed under a BSD license at C-Keen's "
-			 (link "https://github.com/ckeen/pastiche" "github repo"))
-		    (<p> "Our thanks go to chandler for the famous "
-			 (link "http://paste.lisp.org" "lisppaste") " "
-			 (link "http://www.cliki.net/lisppaste" "(cliki page)")
-			 " bot and the same disclaimer applies:")
-		    (<p> "Lisppaste pastes can be made by anyone at
+                        (link "https://github.com/ckeen/pastiche" "github repo"))
+                   (<p> "Our thanks go to chandler for the famous "
+                        (link "http://paste.lisp.org" "lisppaste") " "
+                        (link "http://www.cliki.net/lisppaste" "(cliki page)")
+                        " bot and the same disclaimer applies:")
+                   (<p> "Lisppaste pastes can be made by anyone at
                           any time. Imagine a fearsomely comprehensive disclaimer of
                           liability. Now fear, comprehensively."))
-	     (navigation-links))))))))
+            (navigation-links)))))))
 
 
