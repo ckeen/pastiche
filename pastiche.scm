@@ -402,6 +402,7 @@
                    (<p> "Lisppaste pastes can be made by anyone at
                           any time. Imagine a fearsomely comprehensive disclaimer of
                           liability. Now fear, comprehensively."))
-            (navigation-links)))))))
+            (navigation-links)))
+      title: "About Pastiche"))))
 
 
