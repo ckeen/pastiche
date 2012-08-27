@@ -274,7 +274,7 @@
            (++
             (<div> id: "content"
                    (cond
-                    (id
+                    ((and id (not paste))
                      (cond ((fetch-paste id)
                             => (lambda (p)
                                  (set! paste-title (third (last p)))
