@@ -5,4 +5,4 @@
 
 (install-extension 'pastiche
                    '("pastiche.so" "pastiche.import.so")
-                   '((version 0.13)))
+                   '((version 0.14)))
