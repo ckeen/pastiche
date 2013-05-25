@@ -76,6 +76,11 @@
 			(browsing-steps 15)
                         (awful-settings (lambda (_) (_))))
 
+  (define (delete-and-refill-captchas clist captcha)
+    (if (= 1 (length clist))
+        (create-captchas num-captchas)
+        (alist-delete captcha clist)))
+
   (parameterize ((app-root-path base-path))
 
 		(add-request-handler-hook!
@@ -317,6 +322,8 @@
                                                   (set! url (make-pathname base-path (++ "paste?id=" hashsum)))))
                                       (set! paste-title title)
                                       (when ($ 'notify-irc) (notify nick title url))
+                                      (set! captchas
+                                            (delete-and-refill-captchas captchas ($ 'captcha-hash)))
                                       (++  (<h2> align: "center" "Thanks for your paste!")
                                            (<p> "Hi " nick ", thanks for pasting: " (<em> title) (<br>))
                                            (<p> align: "center") "Your paste can be reached with this url: " (link url url)))))))
