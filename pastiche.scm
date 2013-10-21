@@ -21,7 +21,8 @@
      utils
      extras
      irregex
-     (srfi 1 13))
+     (srfi 1 13)
+     utf8)
 
 
 ;;;
@@ -332,8 +333,8 @@
            css: (page-css)
            title: paste-title))))
 
-    (define-page "paste" handle-paste method: 'POST no-template: #t)
-    (define-page "paste" handle-paste method: 'GET no-template: #t)
+    (define-page "paste" handle-paste method: 'POST)
+    (define-page "paste" handle-paste method: 'GET)
 
     (define (convert-newlines text mode)
       (and text
