@@ -97,7 +97,7 @@
     (define figlet-installed?
       (handle-exceptions exn
         #f
-        (system* "figlet -v 2>&1 > /dev/null")))
+        (system* "figlet -v >/dev/null 2>&1")))
 
     (when (and use-captcha? (not figlet-installed?))
       (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
