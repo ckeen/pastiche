@@ -323,8 +323,9 @@
                                                   (set! url (make-pathname base-path (++ "paste?id=" hashsum)))))
                                       (set! paste-title title)
                                       (when ($ 'notify-irc) (notify nick title url))
-                                      (set! captchas
-                                            (delete-and-refill-captchas captchas ($ 'captcha-hash)))
+                                      (when use-captcha?
+                                        (set! captchas
+                                              (delete-and-refill-captchas captchas ($ 'captcha-hash))))
                                       (++  (<h2> align: "center" "Thanks for your paste!")
                                            (<p> "Hi " nick ", thanks for pasting: " (<em> title) (<br>))
                                            (<p> align: "center") "Your paste can be reached with this url: " (link url url)))))))
