@@ -95,11 +95,16 @@
 				       (awful-settings handler)))))
 
     (define figlet-installed?
-      (handle-exceptions exn
-        #f
-        (system* "figlet -v >/dev/null 2>&1")))
+      (let ((install-status 'not-checked))
+        (lambda ()
+          (when (eq? install-status 'not-checked)
+            (set! install-status
+                  (handle-exceptions exn
+                    #f
+                    (system* "figlet -v >/dev/null 2>&1"))))
+          install-status)))
 
-    (when (and use-captcha? (not figlet-installed?))
+    (when (and use-captcha? (not (figlet-installed?)))
       (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
              "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
