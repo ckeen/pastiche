@@ -75,6 +75,7 @@
                         (use-captcha? #t)
                         (num-captchas 500)
 			(browsing-steps 15)
+                        force-vandusen-notification?
                         (awful-settings (lambda (_) (_))))
 
   (define (delete-and-refill-captchas clist captcha)
@@ -108,6 +109,12 @@
       (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
              "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
+
+    (when (and force-vandusen-notification?
+               (or (not vandusen-host)
+                   (not vandusen-port)))
+      (error 'pastiche
+             "`force-vandusen-notification?' requires both `vandusen-host' and `vandusen-port' to be set."))
 
     (define captchas (and use-captcha? (create-captchas num-captchas)))
 
@@ -183,14 +190,18 @@
                           `(( "Type in the text below:" ,(text-input 'captcha-user-answer))
                             ("" ,(<pre> id: "captcha" (captcha-figlet captcha))))
                           '())
-                        `(("" ,(if vandusen-host
-                                 (<input> name: "notify-irc"
-                                          type: "checkbox"
-                                          checked: "checked"
-                                          "Please notify the #chicken channel on freenode.")
-                                 ""))
-                        ,(list (if annotate-id (hidden-input 'id annotate-id) "")
-                               (submit-input value: "Submit paste!"))))))
+                        `(("" ,(if force-vandusen-notification?
+                                   (<input> name: "notify-irc"
+                                            type: "hidden"
+                                            value: "yes")
+                                   (if vandusen-host
+                                       (<input> name: "notify-irc"
+                                                type: "checkbox"
+                                                checked: "checked"
+                                                "Please notify the #chicken channel on freenode.")
+                                       "")))
+                          ,(list (if annotate-id (hidden-input 'id annotate-id) "")
+                                 (submit-input value: "Submit paste!"))))))
                 action: (make-pathname base-path "paste")
                 method: "post"))))
 
