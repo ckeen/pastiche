@@ -138,11 +138,11 @@
 			   (close-output-port o)))))))
 
 ; old "select * from pastes order by time desc limit ?,?"
-    (define (fetch-last-pastes from to)
-      (let ((r ($db "select * from pastes p where time = (select min(time) from pastes p2 where p2.hash=p.hash) order by time desc limit ?,?" values: (list from to))))
+    (define (fetch-last-pastes count #!key (offset 0))
+      (let ((r ($db "select * from pastes p where time = (select min(time) from pastes p2 where p2.hash=p.hash) order by time desc limit ?,?" values: (list offset count))))
         r))
 
-    (define (make-post-table n #!optional (from 0))
+    (define (make-post-table n #!key (offset 0))
       (define (format-row r)
         (list (second r)                ; Nickname
               (link (make-pathname base-path (string-append "/paste?id=" (first r)))
@@ -151,7 +151,7 @@
 
       (<div> class: "paste-table"
              (or
-              (tabularize (map format-row (fetch-last-pastes from n))
+              (tabularize (map format-row (fetch-last-pastes n offset: offset))
                           header: '("Nickname" "Title" "Date"))
               (<p> "No pastes so far."))))
 
@@ -377,7 +377,7 @@
       no-template: #t)
 
     (define (number-of-posts)
-      (let ((n ($db "select count(hash) from pastes")))
+      (let ((n ($db "select count(distinct(hash)) from pastes")))
 	(and n (caar n))))    
 
     (define-page "browse"
@@ -406,7 +406,7 @@
 				  (link (sprintf "~a?from=~a;to=~a" history-path older-from older-to)
 					"older >")
 				  "older >"))
-		       (make-post-table to from))
+		       (make-post-table browsing-steps offset: from))
 		(navigation-links)))))))
 
     (define-page "about"
