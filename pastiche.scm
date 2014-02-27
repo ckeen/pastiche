@@ -70,11 +70,11 @@
 ;;;
 (define (pastiche base-path db-file
                   #!key (vandusen-port 22722)
-		        (vandusen-host "localhost")
+                        (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
                         (num-captchas 500)
-			(browsing-steps 15)
+                        (browsing-steps 15)
                         force-vandusen-notification?
                         (awful-settings (lambda (_) (_))))
 
@@ -85,15 +85,15 @@
 
   (parameterize ((app-root-path base-path))
 
-		(add-request-handler-hook!
-		 'awful-paste
-		 (lambda (path handler)
-		   (when (string-prefix? base-path path)
-			 (switch-to-sql-de-lite-database)
-			 (parameterize ((app-root-path base-path)
-					(db-credentials db-file)
-					(page-css "http://wiki.call-cc.org/chicken.css"))
-				       (awful-settings handler)))))
+                (add-request-handler-hook!
+                 'awful-paste
+                 (lambda (path handler)
+                   (when (string-prefix? base-path path)
+                         (switch-to-sql-de-lite-database)
+                         (parameterize ((app-root-path base-path)
+                                        (db-credentials db-file)
+                                        (page-css "http://wiki.call-cc.org/chicken.css"))
+                                       (awful-settings handler)))))
 
     (define figlet-installed?
       (let ((install-status 'not-checked))
@@ -128,14 +128,14 @@
       (when vandusen-host
         (let ((cleaned-nick (with-input-from-string nick html-strip))
               (cleaned-title (with-input-from-string title html-strip)))
-	    (ignore-errors
-	     (let ((stuff (sprintf "#chicken ~s pasted ~s ~a"
-				   cleaned-nick cleaned-title (make-pathname base-url url))))
-	       (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
-			   (display stuff o)
-			   (newline o)
-			   (close-input-port i)
-			   (close-output-port o)))))))
+            (ignore-errors
+             (let ((stuff (sprintf "#chicken ~s pasted ~s ~a"
+                                   cleaned-nick cleaned-title (make-pathname base-url url))))
+               (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
+                           (display stuff o)
+                           (newline o)
+                           (close-input-port i)
+                           (close-output-port o)))))))
 
 ; old "select * from pastes order by time desc limit ?,?"
     (define (fetch-last-pastes count #!key (offset 0))
@@ -157,14 +157,14 @@
 
     (define (navigation-links)
       (<div> id: "menu"
-	     (<ul>
-	      (apply ++ (map (lambda (m)
-			       (<li> (link (make-pathname base-path (car m))
-					   (cdr m))))
-			     '(("" . "New Paste")
-			       ("browse" . "Browse pastes")
-			       ("about" . "What is this?")))))))
-    
+             (<ul>
+              (apply ++ (map (lambda (m)
+                               (<li> (link (make-pathname base-path (car m))
+                                           (cdr m))))
+                             '(("" . "New Paste")
+                               ("browse" . "Browse pastes")
+                               ("about" . "What is this?")))))))
+
     (define (recent-pastes n)
       (<div> class: "paste-list"
              (<h2> "The last " n " pastes so far: ")
@@ -184,9 +184,9 @@
                      (append
                       `(( "Your nick: " ,(text-input 'nick))
                         ( "The title of your paste:" ,(text-input 'title) )
-			( ,(++ "Your paste " (<i> "(mandatory)" " :"))
+                        ( ,(++ "Your paste " (<i> "(mandatory)" " :"))
                           ,(<textarea> id: "paste" name: "paste"  cols: 60 rows: 24)))
-			(if use-captcha?
+                        (if use-captcha?
                           `(( "Type in the text below:" ,(text-input 'captcha-user-answer))
                             ("" ,(<pre> id: "captcha" (captcha-figlet captcha))))
                           '())
@@ -207,8 +207,8 @@
 
     (define (fetch-paste id)
       (and id
-	   (let ((r ($db "select * from pastes where hash=? order by time desc" values: (list id))))
-	     (and (not (null? r)) r))))
+           (let ((r ($db "select * from pastes where hash=? order by time desc" values: (list id))))
+             (and (not (null? r)) r))))
 
     (define (update-paste id snippet)
       (insert-paste id snippet))
@@ -230,18 +230,18 @@
 
     (define (prettify-time t)
       (let* ((delta (- (current-seconds) t))
-	     (fits
-	      (lambda (d l)
-		(let ((r (inexact->exact (floor (/ delta d)))))
-		  (if (and (< 0 r) (>= l r)) r #f)))))
-	(cond ((fits (* 60 60 24) 3) =>
-	       (lambda (d) (sprintf "~a days ago" d)))
-	      ((fits (* 60 60) 24) =>
-	       (lambda (hrs)
-		 (sprintf "~a hours ago" hrs)))
-	      ((fits 60 (* 60 5)) => (lambda (m) (sprintf "~a minutes ago" m)))
-	      ((fits 1 120) => (lambda (_) (sprintf "just now!")))
-	      (else (sprintf "on ~a" (seconds->string t))))))
+             (fits
+              (lambda (d l)
+                (let ((r (inexact->exact (floor (/ delta d)))))
+                  (if (and (< 0 r) (>= l r)) r #f)))))
+        (cond ((fits (* 60 60 24) 3) =>
+               (lambda (d) (sprintf "~a days ago" d)))
+              ((fits (* 60 60) 24) =>
+               (lambda (hrs)
+                 (sprintf "~a hours ago" hrs)))
+              ((fits 60 (* 60 5)) => (lambda (m) (sprintf "~a minutes ago" m)))
+              ((fits 1 120) => (lambda (_) (sprintf "just now!")))
+              (else (sprintf "on ~a" (seconds->string t))))))
 
     (define (print-snippet s #!key annotation? (count 0))
       (++ (<div> class: "paste-header"
@@ -271,19 +271,19 @@
 
     (define-page "/" ;; the main page, prefixed by base-path
       (lambda ()
-        (++ 
-	 (<div> id: "content" (<h1> id: "heading" align: "center"
-				    "Welcome to the chicken scheme pasting service")
-		(++ (or (and-let* ((id ($ 'id))
-				   (annotate ($ 'annotate)))
-				  (cond ((fetch-paste id)
-					 => (lambda (p)
-					      (++ (format-all-snippets p)
-						  (<h2> "Your annotation:")
-						  (paste-form annotate-id: id))))
-					(else (bail-out "Found no paste to annotate with this id."))))
-			(paste-form))))
-	 (navigation-links)))
+        (++
+         (<div> id: "content" (<h1> id: "heading" align: "center"
+                                    "Welcome to the chicken scheme pasting service")
+                (++ (or (and-let* ((id ($ 'id))
+                                   (annotate ($ 'annotate)))
+                                  (cond ((fetch-paste id)
+                                         => (lambda (p)
+                                              (++ (format-all-snippets p)
+                                                  (<h2> "Your annotation:")
+                                                  (paste-form annotate-id: id))))
+                                        (else (bail-out "Found no paste to annotate with this id."))))
+                        (paste-form))))
+         (navigation-links)))
       title: "Pastiche: the Chicken Scheme pasting service")
 
     (define (handle-paste)
@@ -378,36 +378,36 @@
 
     (define (number-of-posts)
       (let ((n ($db "select count(distinct(hash)) from pastes")))
-	(and n (caar n))))    
+        (and n (caar n))))
 
     (define-page "browse"
       (lambda ()
-	(with-request-variables
-	 ((from as-number)
-	  (to as-number))
-	 (let* ((nposts (number-of-posts))
-		(from (if (and from (>= from 0) (<= from nposts)) from 0))
-		(to (if (and to (> to from) (<= to nposts)) to browsing-steps))
-		(older-to (min (+ to browsing-steps) nposts))
-		(older-from (+ from browsing-steps))
-		(newer-from (- from browsing-steps))
-		(newer-to (max (- to browsing-steps) browsing-steps))
-		(history-path (make-pathname base-path "browse")))
-	   (html-page
-	    (++ (<div> id: "content"
-		       (<h2> align: "center" "Browsing pastes")
-		       (<div> id: "browse-navigation"
-			      align: "center"
-			      (if (>= newer-from 0) (link  (sprintf "~a?from=~a;to=~a" history-path newer-from newer-to)
-							   "< newer")
-				  "< newer")
-			      " ... "
-			      (if (and (not (= to nposts)) (<= older-to nposts))
-				  (link (sprintf "~a?from=~a;to=~a" history-path older-from older-to)
-					"older >")
-				  "older >"))
-		       (make-post-table browsing-steps offset: from))
-		(navigation-links)))))))
+        (with-request-variables
+         ((from as-number)
+          (to as-number))
+         (let* ((nposts (number-of-posts))
+                (from (if (and from (>= from 0) (<= from nposts)) from 0))
+                (to (if (and to (> to from) (<= to nposts)) to browsing-steps))
+                (older-to (min (+ to browsing-steps) nposts))
+                (older-from (+ from browsing-steps))
+                (newer-from (- from browsing-steps))
+                (newer-to (max (- to browsing-steps) browsing-steps))
+                (history-path (make-pathname base-path "browse")))
+           (html-page
+            (++ (<div> id: "content"
+                       (<h2> align: "center" "Browsing pastes")
+                       (<div> id: "browse-navigation"
+                              align: "center"
+                              (if (>= newer-from 0) (link  (sprintf "~a?from=~a;to=~a" history-path newer-from newer-to)
+                                                           "< newer")
+                                  "< newer")
+                              " ... "
+                              (if (and (not (= to nposts)) (<= older-to nposts))
+                                  (link (sprintf "~a?from=~a;to=~a" history-path older-from older-to)
+                                        "older >")
+                                  "older >"))
+                       (make-post-table browsing-steps offset: from))
+                (navigation-links)))))))
 
     (define-page "about"
       (lambda ()
@@ -429,5 +429,3 @@
                           liability. Now fear, comprehensively."))
             (navigation-links)))
       title: "About Pastiche"))))
-
-
