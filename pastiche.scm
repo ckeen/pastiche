@@ -106,18 +106,19 @@
         (create-captchas num-captchas)
         (alist-delete captcha clist)))
 
-  (parameterize ((app-root-path base-path)
-                 (enable-sxml #t))
+  (define base-path-pattern
+    (irregex (string-append (string-chomp base-path "/") "(/.*)*")))
 
-                (add-request-handler-hook!
-                 'awful-paste
-                 (lambda (path handler)
-                   (when (string-prefix? base-path path)
-                         (switch-to-sql-de-lite-database)
-                         (parameterize ((app-root-path base-path)
-                                        (db-credentials db-file)
-                                        (page-css "http://wiki.call-cc.org/chicken.css"))
-                                       (awful-settings handler)))))
+  (define-app pastiche
+    matcher: (lambda (path)
+               (irregex-match base-path-pattern path))
+    handler-hook: (lambda (handler)
+                    (switch-to-sql-de-lite-database)
+                    (parameterize ((app-root-path base-path)
+                                   (enable-sxml #t)
+                                   (db-credentials db-file)
+                                   (page-css "http://wiki.call-cc.org/chicken.css"))
+                      (awful-settings handler)))
 
     (define figlet-installed?
       (let ((install-status 'not-checked))
@@ -469,6 +470,10 @@
                    any time. Imagine a fearsomely comprehensive disclaimer of
                   liability. Now fear, comprehensively."))
           ,(navigation-links)))
-      title: "About Pastiche")))
+      title: "About Pastiche")
+
+    ) ;; end define-app
+
+  ) ;; end pastiche
 
 ) ;; end module
