@@ -336,6 +336,7 @@
                       (cond ((fetch-paste id)
                              => (lambda (p)
                                   (set! paste-title (third (last p)))
+                                  (set-page-title! paste-title)
                                   `(,(format-all-snippets p)
                                     (div (@ (id "paste-footer"))
                                          (h2 (@ (align "center"))
