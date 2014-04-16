@@ -101,7 +101,7 @@
 
 (define (string-as-wav s)
   (let-values (((in out pid) (process "espeak" '("-s 10" "--stdout"))))
-    (fprintf out "~s" (list->string (intersperse (string->list s) #\space)))
+    (fprintf out "~s" (list->string (intersperse (string->list s) #\.)))
     (close-output-port out)
     (let ((r (read-all in)))
       (close-input-port in)
