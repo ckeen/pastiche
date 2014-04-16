@@ -53,6 +53,18 @@
 ;;;
 (define-record captcha string figlet)
 
+(define external-tools '("figlet" "espeak"))
+
+(define (tool-exists? tool)
+  (let ((install-status 'not-checked))
+    (lambda ()
+      (when (eq? install-status 'not-checked)
+        (set! install-status
+              (handle-exceptions exn
+                                 #f
+                                 (system* (string-append tool " -v >/dev/null 2>&1")))))
+      install-status)))
+
 (define (create-captchas num #!key (min-captcha-len 4) (max-captcha-len 8))
   ;; returns an alist mapping captcha hashes to captcha records
 
@@ -87,6 +99,13 @@
 (define (get-captcha captchas)
   (list-ref captchas (random (length captchas))))
 
+(define (string-as-wav s)
+  (let-values (((in out pid) (process "espeak" '("-s 10" "--stdout"))))
+    (fprintf out "~s" (list->string (intersperse (string->list s) #\space)))
+    (close-output-port out)
+    (let ((r (read-all in)))
+      (close-input-port in)
+      r)))
 
 ;;;
 ;;; Pastiche
@@ -120,19 +139,11 @@
                                    (page-css "http://wiki.call-cc.org/chicken.css"))
                       (awful-settings handler)))
 
-    (define figlet-installed?
-      (let ((install-status 'not-checked))
-        (lambda ()
-          (when (eq? install-status 'not-checked)
-            (set! install-status
-                  (handle-exceptions exn
-                    #f
-                    (system* "figlet -v >/dev/null 2>&1"))))
-          install-status)))
-
-    (when (and use-captcha? (not (figlet-installed?)))
-      (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
-             "doesn't seem to be installed. Disabling captchas.")
+    (when (and use-captcha? (not (every tool-exists? external-tools)))
+      (print "WARNING: `use-captcha?' indicates that captchas are enabled but one of out external tools"
+             "doesn't seem to be installed."
+             "The needed tools are " (string-intersperse external-tools)
+             ". Disabling captchas.")
       (set! use-captcha? #f))
 
     (when (and force-vandusen-notification?
@@ -217,7 +228,18 @@
                        (if use-captcha?
                            `(("Type in the text below:" ,(text-input 'captcha-user-answer))
                              ("" (pre (@ (id "captcha"))
-                                      ,(captcha-figlet captcha))))
+                                      ,(captcha-figlet captcha))
+                              (p
+                               "Visually impaired? Let me spell it for you (wav file)"
+                               (audio (@ (src ,(make-pathname base-path
+                                                              (sprintf "captcha?hash=~a.wav" captcha-hash)))
+                                         (preload  "metadata")
+                                         (controls "controls"))
+                                      (a (@ (href ,(make-pathname base-path
+                                                                  (sprintf "captcha?hash=~a.wav" captcha-hash))))
+                                         "Link to wav file")
+
+                                        ))))
                            '())
                        `(("" ,(if force-vandusen-notification?
                                   (hidden-input 'notify-irc "yes")
@@ -474,8 +496,26 @@
           ,(navigation-links)))
       title: "About Pastiche")
 
+    (define-page "captcha"
+      (lambda ()
+        (with-request-variables
+         ((hash as-string))
+         (let* ((splitted (string-split hash "."))
+                (hash (car splitted))
+                (extension (cadr splitted)))
+           (cond ((and
+                   (string=? extension "wav")
+                   (alist-ref (car (string-split hash ".")) captchas equal?)) =>
+                   (lambda (c)
+                     (awful-response-headers '((content-type "audio/wav")))
+                     `(literal ,(string-as-wav (captcha-string c)))))
+                 (else `(p "Unable to find captcha file. Sorry."
+                           ,(sprintf "~s ~s" hash extension)
+                           ,@(map (lambda (c) (sprintf "captchas ~s" c)) captchas )))))))
+      no-template: #t)
     ) ;; end define-app
 
   ) ;; end pastiche
 
 ) ;; end module
+
