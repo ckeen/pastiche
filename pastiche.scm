@@ -238,12 +238,10 @@
                                     (audio (@ (src ,(make-pathname base-path
                                                                    (sprintf "captcha?hash=~a.wav" captcha-hash)))
                                               (preload  "metadata")
-                                              (controls "controls"))
-                                           (a (@ (href ,(make-pathname base-path
-                                                                       (sprintf "captcha?hash=~a.wav" captcha-hash))))
-                                              "Link to wav file")
-
-                                           ))
+                                              (controls "controls")))
+                                    (a (@ (href ,(make-pathname base-path
+                                                                (sprintf "captcha?hash=~a.wav" captcha-hash))))
+                                       "download WAV"))
                                   '()))
                            '())
                        `(("" ,(if force-vandusen-notification?
