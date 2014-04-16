@@ -387,7 +387,7 @@
                                        "Your paste can be reached with this url: "
                                        (a (@ (href ,url)) ,url))))))))
                      (else (bail-out "I am not storing empty pastes."))))
-            (navigation-links)))))
+            ,(navigation-links)))))
       css: (page-css)
       method: '(get head post))
 
