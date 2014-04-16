@@ -228,9 +228,8 @@
                        (if use-captcha?
                            `(("Type in the text below:" ,(text-input 'captcha-user-answer))
                              ("" (pre (@ (id "captcha"))
-                                      ,(captcha-figlet captcha))
-                              (p
-                               "Visually impaired? Let me spell it for you (wav file)"
+                                      ,(captcha-figlet captcha)))
+                             ("Visually impaired? Let me spell it for you (wav file)"
                                (audio (@ (src ,(make-pathname base-path
                                                               (sprintf "captcha?hash=~a.wav" captcha-hash)))
                                          (preload  "metadata")
@@ -239,7 +238,7 @@
                                                                   (sprintf "captcha?hash=~a.wav" captcha-hash))))
                                          "Link to wav file")
 
-                                        ))))
+                                        )))
                            '())
                        `(("" ,(if force-vandusen-notification?
                                   (hidden-input 'notify-irc "yes")
