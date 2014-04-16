@@ -115,6 +115,7 @@
                         (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
+                        (audible-captcha? #t)
                         (num-captchas 500)
                         (browsing-steps 15)
                         force-vandusen-notification?
@@ -139,12 +140,15 @@
                                    (page-css "http://wiki.call-cc.org/chicken.css"))
                       (awful-settings handler)))
 
-    (when (and use-captcha? (not (every tool-exists? external-tools)))
-      (print "WARNING: `use-captcha?' indicates that captchas are enabled but one of out external tools"
-             "doesn't seem to be installed."
-             "The needed tools are " (string-intersperse external-tools)
-             ". Disabling captchas.")
+    (when (and use-captcha? (not (tool-exists? "figlet")))
+      (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet"
+             "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
+
+    (when (and use-captcha? audible-captcha? (not (tool-exists? "espeak")))
+      (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak"
+             "doesn't seem to be installed. Disabling captchas.")
+      (set! audible-captcha? #f))
 
     (when (and force-vandusen-notification?
                (or (not vandusen-host)
@@ -229,16 +233,18 @@
                            `(("Type in the text below:" ,(text-input 'captcha-user-answer))
                              ("" (pre (@ (id "captcha"))
                                       ,(captcha-figlet captcha)))
-                             ("Visually impaired? Let me spell it for you (wav file)"
-                               (audio (@ (src ,(make-pathname base-path
-                                                              (sprintf "captcha?hash=~a.wav" captcha-hash)))
-                                         (preload  "metadata")
-                                         (controls "controls"))
-                                      (a (@ (href ,(make-pathname base-path
-                                                                  (sprintf "captcha?hash=~a.wav" captcha-hash))))
-                                         "Link to wav file")
+                             ,(if audible-captcha?
+                                  `("Visually impaired? Let me spell it for you (wav file)"
+                                    (audio (@ (src ,(make-pathname base-path
+                                                                   (sprintf "captcha?hash=~a.wav" captcha-hash)))
+                                              (preload  "metadata")
+                                              (controls "controls"))
+                                           (a (@ (href ,(make-pathname base-path
+                                                                       (sprintf "captcha?hash=~a.wav" captcha-hash))))
+                                              "Link to wav file")
 
-                                        )))
+                                           ))
+                                  '()))
                            '())
                        `(("" ,(if force-vandusen-notification?
                                   (hidden-input 'notify-irc "yes")
@@ -497,20 +503,22 @@
 
     (define-page "captcha"
       (lambda ()
-        (with-request-variables
-         ((hash as-string))
-         (let* ((splitted (string-split hash "."))
-                (hash (car splitted))
-                (extension (cadr splitted)))
-           (cond ((and
-                   (string=? extension "wav")
-                   (alist-ref (car (string-split hash ".")) captchas equal?)) =>
-                   (lambda (c)
-                     (awful-response-headers '((content-type "audio/wav")))
-                     `(literal ,(string-as-wav (captcha-string c)))))
-                 (else `(p "Unable to find captcha file. Sorry."
-                           ,(sprintf "~s ~s" hash extension)
-                           ,@(map (lambda (c) (sprintf "captchas ~s" c)) captchas )))))))
+        (if audible-captcha?
+            (with-request-variables
+             ((hash as-string))
+             (when (not hash))
+             (let*
+                 ((splitted (string-split hash "."))
+                  (hash (car splitted))
+                  (extension (or (null? (cdr splitted)) (cadr splitted))))
+               (cond ((and
+                       (equal? extension "wav")
+                       (alist-ref (car (string-split hash ".")) captchas equal?)) =>
+                       (lambda (c)
+                         (awful-response-headers '((content-type "audio/wav")))
+                         `(literal ,(string-as-wav (captcha-string c)))))
+                     (else (bail-out "Wrong captcha hash, please reload the page and try again")))))
+            (bail-out "Audio captchas have been disabled in the configuration.")))
       no-template: #t)
     ) ;; end define-app
 
