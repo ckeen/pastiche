@@ -53,8 +53,6 @@
 ;;;
 (define-record captcha string figlet)
 
-(define external-tools '("figlet" "espeak"))
-
 (define (tool-exists? tool)
   (let ((paths (string-split (get-environment-variable "PATH")
                              (if (eq? (software-type) 'windows)
@@ -506,7 +504,6 @@
         (if audible-captcha?
             (with-request-variables
              ((hash as-string))
-             (when (not hash))
              (let*
                  ((splitted (string-split hash "."))
                   (hash (car splitted))
