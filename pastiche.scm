@@ -5,6 +5,7 @@
 (use awful
      colorize
      html-parser
+     intarweb
      miscmacros
      simple-sha1
      sql-de-lite
@@ -47,6 +48,30 @@
              (id ,id)
              (name ,id)
              (value ,value))))
+
+(define (preferred-languages accept-language-contents)
+  (let ((qualities (fold (lambda (x s)
+                           (cons
+                            (cons (get-value x)
+                                  (or
+                                   (get-param 'q x)
+                                   1))
+                            s))
+                         '()
+                         accept-language-contents)))
+    (sort qualities (lambda (a b)
+                      (> (cdr a) (cdr b))))))
+
+(define (find-espeak-languages)
+  (let ((data-dir (last (with-input-from-pipe "espeak --version" (lambda () (string-split (read-line) " "))))))
+    (if (directory-exists? data-dir)
+        (find-files (make-pathname data-dir "voices") action: (lambda (f s) (cons (pathname-strip-directory f) s)) test: file-exists?)
+        '("en"))))
+
+(define (select-preferred-language available preferences)
+  (or (find (cut member <> available) (map (lambda (p) (symbol->string (car p))) preferences)) "en"))
+
+(define espeak-available-languages '())
 
 ;;;
 ;;; Captchas
@@ -99,8 +124,9 @@
 (define (get-captcha captchas)
   (list-ref captchas (random (length captchas))))
 
-(define (string-as-wav s)
-  (let-values (((in out pid) (process "espeak" '("-s 10" "--stdout"))))
+(define (string-as-wav s preferred-languages)
+  (let-values (((in out pid) (process "espeak" `("-s 10" "--stdout" "-v"
+                                                 ,(select-preferred-language espeak-available-languages preferred-languages)))))
     (fprintf out "~s" (list->string (intersperse (string->list s) #\.)))
     (close-output-port out)
     (let ((r (read-all in)))
@@ -149,6 +175,8 @@
       (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak "
              "doesn't seem to be installed. Disabling captchas.")
       (set! audible-captcha? #f))
+
+    (set! espeak-available-languages (find-espeak-languages))
 
     (when (and force-vandusen-notification?
                (or (not vandusen-host)
@@ -513,7 +541,8 @@
                        (alist-ref (car (string-split hash ".")) captchas equal?)) =>
                        (lambda (c)
                          (awful-response-headers '((content-type "audio/wav")))
-                         `(literal ,(string-as-wav (captcha-string c)))))
+                         `(literal ,(string-as-wav (captcha-string c)
+                                                   (preferred-languages (header-contents 'accept-language (request-headers (current-request))))))))
                      (else (bail-out "Wrong captcha hash, please reload the page and try again")))))
             (bail-out "Audio captchas have been disabled in the configuration.")))
       no-template: #t)
