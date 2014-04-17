@@ -56,14 +56,16 @@
 (define external-tools '("figlet" "espeak"))
 
 (define (tool-exists? tool)
-  (let ((install-status 'not-checked))
-    (lambda ()
-      (when (eq? install-status 'not-checked)
-        (set! install-status
-              (handle-exceptions exn
-                                 #f
-                                 (system* (string-append tool " -v >/dev/null 2>&1")))))
-      install-status)))
+  (let ((paths (string-split (get-environment-variable "PATH")
+                             (if (eq? (software-type) 'windows)
+                                 ";"
+                                 ":"))))
+    (let loop ((paths paths))
+      (if (null? paths)
+          #f
+          (let ((path (car paths)))
+            (or (file-exists? (make-pathname path tool))
+                (loop (cdr paths))))))))
 
 (define (create-captchas num #!key (min-captcha-len 4) (max-captcha-len 8))
   ;; returns an alist mapping captcha hashes to captcha records
