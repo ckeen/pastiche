@@ -141,12 +141,12 @@
                       (awful-settings handler)))
 
     (when (and use-captcha? (not (tool-exists? "figlet")))
-      (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet"
+      (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
              "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
 
     (when (and use-captcha? audible-captcha? (not (tool-exists? "espeak")))
-      (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak"
+      (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak "
              "doesn't seem to be installed. Disabling captchas.")
       (set! audible-captcha? #f))
 
