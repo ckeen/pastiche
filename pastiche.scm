@@ -412,8 +412,10 @@
           (or (and paste
                    annotation
                    (<= annotation (length paste))
-                   (convert-newlines (fifth (list-ref (reverse paste) annotation)) #:unix))
-              (convert-newlines paste #:unix)
+                   `(literal
+                     ,(convert-newlines (fifth (list-ref (reverse paste) annotation)) #:unix)))
+              `(literal
+                ,(convert-newlines paste #:unix))
               (bail-out "Could not find a paste with id " id))))
       no-template: #t)
 

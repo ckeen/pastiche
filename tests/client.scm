@@ -38,7 +38,7 @@
 
 (define (get-paste-from-html html)
   (let ((sxml (html->sxml html)))
-    (last (car ((sxpath '(// tt)) sxml)))))
+    (cddar ((sxpath '(// tt)) sxml))))
 
 
 (define (paste-link->id link)
@@ -49,7 +49,7 @@
   (html->sxml
    (post "/paste" '((nick  . "a nick")
                     (title . "a title")
-                    (paste . "a paste")))))
+                    (paste . "a <special html chars> paste")))))
 
 
 (define paste-link #f)
@@ -66,12 +66,12 @@
                     (string-prefix? "/paste?id=" link))))
 
 (test "Checking raw paste"
-      "a paste"
+      "a <special html chars> paste"
       (get (string-append "/raw?id=" (paste-link->id paste-link) ";annotation=0")))
 
 
 (test "Checking HTML paste (view paste)"
-      "a paste"
+      '("a " "<" "special html chars" ">" " paste")
       (get-paste-from-html (get paste-link)))
 
 (test-end "pastiche")
