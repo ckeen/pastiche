@@ -5,6 +5,7 @@
 (use awful
      colorize
      html-parser
+     intarweb
      miscmacros
      simple-sha1
      sql-de-lite
@@ -48,10 +49,46 @@
              (name ,id)
              (value ,value))))
 
+(define (preferred-languages accept-language-contents)
+  (let ((qualities (fold (lambda (x s)
+                           (cons
+                            (cons (get-value x)
+                                  (or
+                                   (get-param 'q x)
+                                   1))
+                            s))
+                         '()
+                         accept-language-contents)))
+    (sort qualities (lambda (a b)
+                      (> (cdr a) (cdr b))))))
+
+(define (find-espeak-languages)
+  (let ((data-dir (last (with-input-from-pipe "espeak --version" (lambda () (string-split (read-line) " "))))))
+    (if (directory-exists? data-dir)
+        (find-files (make-pathname data-dir "voices") action: (lambda (f s) (cons (pathname-strip-directory f) s)) test: file-exists?)
+        '("en"))))
+
+(define (select-preferred-language available preferences)
+  (or (find (cut member <> available) (map (lambda (p) (symbol->string (car p))) preferences)) "en"))
+
+(define espeak-available-languages '())
+
 ;;;
 ;;; Captchas
 ;;;
 (define-record captcha string figlet)
+
+(define (tool-exists? tool)
+  (let ((paths (string-split (get-environment-variable "PATH")
+                             (if (eq? (software-type) 'windows)
+                                 ";"
+                                 ":"))))
+    (let loop ((paths paths))
+      (if (null? paths)
+          #f
+          (let ((path (car paths)))
+            (or (file-exists? (make-pathname path tool))
+                (loop (cdr paths))))))))
 
 (define (create-captchas num #!key (min-captcha-len 4) (max-captcha-len 8))
   ;; returns an alist mapping captcha hashes to captcha records
@@ -87,6 +124,14 @@
 (define (get-captcha captchas)
   (list-ref captchas (random (length captchas))))
 
+(define (string-as-wav s preferred-languages)
+  (let-values (((in out pid) (process "espeak" `("-s 10" "--stdout" "-v"
+                                                 ,(select-preferred-language espeak-available-languages preferred-languages)))))
+    (fprintf out "~s" (list->string (intersperse (string->list s) #\.)))
+    (close-output-port out)
+    (let ((r (read-all in)))
+      (close-input-port in)
+      r)))
 
 ;;;
 ;;; Pastiche
@@ -96,6 +141,7 @@
                         (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
+                        (audible-captcha? #t)
                         (num-captchas 500)
                         (browsing-steps 15)
                         force-vandusen-notification?
@@ -120,20 +166,17 @@
                                    (page-css "http://wiki.call-cc.org/chicken.css"))
                       (awful-settings handler)))
 
-    (define figlet-installed?
-      (let ((install-status 'not-checked))
-        (lambda ()
-          (when (eq? install-status 'not-checked)
-            (set! install-status
-                  (handle-exceptions exn
-                    #f
-                    (system* "figlet -v >/dev/null 2>&1"))))
-          install-status)))
-
-    (when (and use-captcha? (not (figlet-installed?)))
+    (when (and use-captcha? (not (tool-exists? "figlet")))
       (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
              "doesn't seem to be installed. Disabling captchas.")
       (set! use-captcha? #f))
+
+    (when (and use-captcha? audible-captcha? (not (tool-exists? "espeak")))
+      (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak "
+             "doesn't seem to be installed. Disabling captchas.")
+      (set! audible-captcha? #f))
+
+    (set! espeak-available-languages (find-espeak-languages))
 
     (when (and force-vandusen-notification?
                (or (not vandusen-host)
@@ -217,7 +260,17 @@
                        (if use-captcha?
                            `(("Type in the text below:" ,(text-input 'captcha-user-answer))
                              ("" (pre (@ (id "captcha"))
-                                      ,(captcha-figlet captcha))))
+                                      ,(captcha-figlet captcha)))
+                             ,(if audible-captcha?
+                                  `("Visually impaired? Let me spell it for you (wav file)"
+                                    (audio (@ (src ,(make-pathname base-path
+                                                                   (sprintf "captcha?hash=~a.wav" captcha-hash)))
+                                              (preload  "metadata")
+                                              (controls "controls")))
+                                    (a (@ (href ,(make-pathname base-path
+                                                                (sprintf "captcha?hash=~a.wav" captcha-hash))))
+                                       "download WAV"))
+                                  '()))
                            '())
                        `(("" ,(if force-vandusen-notification?
                                   (hidden-input 'notify-irc "yes")
@@ -477,8 +530,28 @@
           ,(navigation-links)))
       title: "About Pastiche")
 
+    (define-page "captcha"
+      (lambda ()
+        (if audible-captcha?
+            (with-request-variables
+             ((hash as-string))
+             (let*
+                 ((splitted (string-split hash "."))
+                  (hash (car splitted))
+                  (extension (or (null? (cdr splitted)) (cadr splitted))))
+               (cond ((and
+                       (equal? extension "wav")
+                       (alist-ref (car (string-split hash ".")) captchas equal?)) =>
+                       (lambda (c)
+                         (awful-response-headers '((content-type "audio/wav")))
+                         `(literal ,(string-as-wav (captcha-string c)
+                                                   (preferred-languages (header-contents 'accept-language (request-headers (current-request))))))))
+                     (else (bail-out "Wrong captcha hash, please reload the page and try again")))))
+            (bail-out "Audio captchas have been disabled in the configuration.")))
+      no-template: #t)
     ) ;; end define-app
 
   ) ;; end pastiche
 
 ) ;; end module
+
