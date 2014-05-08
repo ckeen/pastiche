@@ -62,11 +62,20 @@
     (sort qualities (lambda (a b)
                       (> (cdr a) (cdr b))))))
 
-(define (find-espeak-languages)
-  (let ((data-dir (last (with-input-from-pipe "espeak --version" (lambda () (string-split (read-line) " "))))))
-    (if (directory-exists? data-dir)
-        (find-files (make-pathname data-dir "voices") action: (lambda (f s) (cons (pathname-strip-directory f) s)) test: file-exists?)
-        '("en"))))
+(define (find-espeak-languages executable data-dir)
+  (let* ((raw-input (with-input-from-pipe (string-append executable
+                                                         " --version")
+                                          read-line))
+         (derived-data-dir (and (not (eof-object? raw-input))
+                                (last (string-split raw-input " ")))))
+    (cond ((or (and data-dir (directory-exists? data-dir))
+               (and derived-data-dir (directory-exists? derived-data-dir))) =>
+           (lambda (dir)
+             (find-files (make-pathname dir "voices") action: (lambda (f s) (cons (pathname-strip-directory f) s)) test: file-exists?)))
+          (derived-data-dir ;; executable has been found, but directory does not exist
+           '("en"))
+          (else
+           (error "audible captchas have been configured but the call to espeak did not work.")))))
 
 (define (select-preferred-language available preferences)
   (or (find (cut member <> available) (map (lambda (p) (symbol->string (car p))) preferences)) "en"))
@@ -124,8 +133,8 @@
 (define (get-captcha captchas)
   (list-ref captchas (random (length captchas))))
 
-(define (string-as-wav s preferred-languages)
-  (let-values (((in out pid) (process "espeak" `("-s 10" "--stdout" "-v"
+(define (string-as-wav espeak-binary s preferred-languages)
+  (let-values (((in out pid) (process espeak-binary `("-s 10" "--stdout" "-v"
                                                  ,(select-preferred-language espeak-available-languages preferred-languages)))))
     (fprintf out "~s" (list->string (intersperse (string->list s) #\.)))
     (close-output-port out)
@@ -142,6 +151,8 @@
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
                         (audible-captcha? #t)
+                        (espeak-binary "espeak")
+                        (espeak-data-dir #f)
                         (num-captchas 500)
                         (browsing-steps 15)
                         force-vandusen-notification?
@@ -176,7 +187,7 @@
              "doesn't seem to be installed. Disabling captchas.")
       (set! audible-captcha? #f))
 
-    (set! espeak-available-languages (find-espeak-languages))
+    (set! espeak-available-languages (find-espeak-languages espeak-binary espeak-data-dir))
 
     (when (and force-vandusen-notification?
                (or (not vandusen-host)
@@ -544,7 +555,8 @@
                        (alist-ref (car (string-split hash ".")) captchas equal?)) =>
                        (lambda (c)
                          (awful-response-headers '((content-type "audio/wav")))
-                         `(literal ,(string-as-wav (captcha-string c)
+                         `(literal ,(string-as-wav espeak-binary
+                                                   (captcha-string c)
                                                    (preferred-languages (header-contents 'accept-language (request-headers (current-request))))))))
                      (else (bail-out "Wrong captcha hash, please reload the page and try again")))))
             (bail-out "Audio captchas have been disabled in the configuration.")))
