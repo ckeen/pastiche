@@ -136,7 +136,7 @@
 (define (string-as-wav espeak-binary s preferred-languages)
   (let-values (((in out pid) (process espeak-binary `("-s 10" "--stdout" "-v"
                                                  ,(select-preferred-language espeak-available-languages preferred-languages)))))
-    (fprintf out "~s" (list->string (intersperse (string->list s) #\.)))
+    (fprintf out "~s" (list->string (intersperse (string->list s) #\space)))
     (close-output-port out)
     (let ((r (read-all in)))
       (close-input-port in)
