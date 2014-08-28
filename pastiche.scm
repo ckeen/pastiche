@@ -370,7 +370,8 @@
 
     (define-page "/" ;; the main page, prefixed by base-path
       (lambda ()
-        `((div (@ (id "content"))
+        `(,(navigation-links)
+          (div (@ (id "content"))
                (h1 (@ (id "heading")
                       (align "center"))
                    "Welcome to the chicken scheme pasting service")
@@ -382,8 +383,7 @@
                                      (h2 "Your annotation:")
                                      ,(paste-form annotate-id: id))))
                               (else (bail-out "Found no paste to annotate with this id."))))
-                     (paste-form))))
-          ,(navigation-links)))
+                     (paste-form))))))
       title: "Pastiche: the CHICKEN Scheme pasting service")
 
     (define-page "paste"
@@ -394,7 +394,8 @@
                                    (title (nonempty as-string))
                                    (paste (nonempty as-string))
                                    (id    (nonempty as-string)))
-            `((div (@ (id "content"))
+            `(,(navigation-links)
+	      (div (@ (id "content"))
                    ,(cond
                      ((and id (not paste))
                       (cond ((fetch-paste id)
@@ -453,8 +454,7 @@
                                     (p (@ (align "center"))
                                        "Your paste can be reached with this url: "
                                        (a (@ (href ,url)) ,url))))))))
-                     (else (bail-out "I am not storing empty pastes."))))
-            ,(navigation-links)))))
+                     (else (bail-out "I am not storing empty pastes."))))))))
       css: (page-css)
       method: '(get head post))
 
@@ -499,7 +499,8 @@
                  (newer-from (- from browsing-steps))
                  (newer-to (max (- to browsing-steps) browsing-steps))
                  (history-path (make-pathname base-path "browse")))
-            `((div (@ (id "content"))
+            `(,(navigation-links)
+              (div (@ (id "content"))
                    (h2 (@ (align "center")) "Browsing pastes")
                    (div (@ (id "browse-navigation")
                            (align "center"))
@@ -517,12 +518,12 @@
                                                     older-to)))
                                  "older >")
                              "older >")
-                        ,(make-post-table browsing-steps offset: from)))
-              ,(navigation-links))))))
+                        ,(make-post-table browsing-steps offset: from))))))))
 
     (define-page "about"
       (lambda ()
-        `((div (@ (id "content"))
+        `(,(navigation-links)
+          (div (@ (id "content"))
                (h2 "You have reached the CHICKEN scheme pasting service")
                (p "These pages are maintained by the CHICKEN scheme
                    project team. Anyone that enters a correct CAPTCHA response is allowed
@@ -537,8 +538,7 @@
                   " bot and the same disclaimer applies:")
                (p "Lisppaste pastes can be made by anyone at
                    any time. Imagine a fearsomely comprehensive disclaimer of
-                  liability. Now fear, comprehensively."))
-          ,(navigation-links)))
+                  liability. Now fear, comprehensively."))))
       title: "About Pastiche")
 
     (define-page "captcha"
