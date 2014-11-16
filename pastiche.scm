@@ -41,6 +41,7 @@
 (define (text-input id)
   `(input (@ (type "text")
              (name ,id)
+             (maxlength 78)
              (id ,id))))
 
 (define (hidden-input id value)
