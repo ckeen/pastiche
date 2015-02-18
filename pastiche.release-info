@@ -1,5 +1,6 @@
 (repo git "git://github.com/ckeen/{egg-name}.git")
 (uri targz "https://github.com/ckeen/{egg-name}/tarball/{egg-release}")
+(release "0.23")
 (release "0.22")
 (release "0.21")
 (release "0.20")
