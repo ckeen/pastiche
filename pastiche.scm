@@ -225,7 +225,8 @@
     (define (make-post-table n #!key (offset 0))
       (define (format-row r)
         (list (second r)                   ; Nickname
-              `(a (@ (href ,(make-pathname base-path (string-append "/paste?id=" (first r)))))
+              `(a (@ (href ,(make-pathname base-path (string-append "/paste?id=" (first r))))
+                     (id "paste-url"))
                   ,(third r))              ; title
               (prettify-time (fourth r)))) ; date
 
