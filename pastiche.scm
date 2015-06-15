@@ -175,7 +175,7 @@
                     (parameterize ((app-root-path base-path)
                                    (enable-sxml #t)
                                    (db-credentials db-file)
-                                   (page-css "http://wiki.call-cc.org/chicken.css"))
+                                   (page-css "//wiki.call-cc.org/chicken.css"))
                       (awful-settings handler)))
 
     (when (and use-captcha? (not (tool-exists? "figlet")))
