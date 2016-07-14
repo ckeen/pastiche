@@ -202,6 +202,7 @@
     (unless (file-exists? db-file)
       (let ((db (open-database db-file)))
         (exec (sql db "create table pastes(hash text, author text, title text, time float, paste text)"))
+        (exec (sql db "create virtual table searchable using fts3(hash, author, title, time, paste)"))
         (close-database db)))
 
     (define (notify nick title url)
@@ -216,6 +217,25 @@
                            (newline o)
                            (close-input-port i)
                            (close-output-port o)))))))
+
+
+    (define (matching-pastes query)
+      ($db "select * from searchable where searchable match ? order by time desc" values: (list query)))
+
+    (define (make-search-result-table results)
+      (define (format-row r)
+        (list (second r)                   ; Nickname
+              `(a (@ (href ,(make-pathname base-path (string-append "/paste?id=" (first r))))
+                     (id "paste-url"))
+                  ,(third r))              ; title
+              (prettify-time (fourth r)))) ; date
+
+      `(div (@ (class "paste-table"))
+            ,(or
+              (tabularize (map format-row results)
+                          header: '("Nickname" "Title" "Date"))
+              '(p "No pastes found matching your query."))))
+
 
 ; old "select * from pastes order by time desc limit ?,?"
     (define (fetch-last-pastes count #!key (offset 0))
@@ -242,7 +262,8 @@
                          `(li (a (@ (href ,(make-pathname base-path (car m))))
                                  ,(cdr m))))
                        '(("" . "New Paste")
-                         ("browse" . "Browse pastes")
+                         ("browse" . "Browse")
+                         ("search" . "Search")
                          ("about" . "What is this?"))))))
 
     (define (recent-pastes n)
@@ -313,6 +334,8 @@
             (time (third paste))
             (paste (fourth paste)))
         ($db "insert into pastes (hash, author, title, time, paste) values (?,?,?,?,?)"
+             values: (list id author title time paste))
+        ($db "insert into searchable (hash, author, title, time, paste) values (?,?,?,?,?)"
              values: (list id author title time paste))))
 
     (define (bail-out . reasons)
@@ -521,6 +544,30 @@
                                  "older >")
                              "older >")
                         ,(make-post-table browsing-steps offset: from))))))))
+
+    (define-page "search"
+      (lambda ()
+        (with-request-variables ((query as-string))
+          (let ((results (and query (matching-pastes query))))
+             `(,(navigation-links)
+               (div (@ (id "content")
+                       (align "center"))
+                    (form (@ (method "post")
+                             (action ,(make-pathname base-path "search")))
+                          (input (@ (type "text")
+                                    (name query)
+                                    (maxlength 78)
+                                    (id query)
+                                    (autofocus "autofocus")
+                                    (size 40)
+                                    (value ,query)))
+                          (input (@ (type "submit")
+                                    (value "Search!"))))
+                    ,(if (and query (pair? results))
+                         `((h2 (@ (align "center")) "Search results for '" ,query "' " ,(length results) " results")
+                           ,(make-search-result-table results))
+                         '(p "No results have matched.")))))))
+      method: '(get head post))
 
     (define-page "about"
       (lambda ()
