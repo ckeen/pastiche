@@ -151,7 +151,7 @@
                         (vandusen-host "localhost")
                         (base-url "http://paste.call-cc.org")
                         (use-captcha? #t)
-                        (audible-captcha? #t)
+                        (audible-captcha? use-captcha?)
                         (espeak-binary "espeak")
                         (espeak-data-dir #f)
                         (num-captchas 500)
@@ -181,14 +181,16 @@
     (when (and use-captcha? (not (tool-exists? "figlet")))
       (print "WARNING: `use-captcha?' indicates that captchas are enabled but figlet "
              "doesn't seem to be installed. Disabling captchas.")
-      (set! use-captcha? #f))
-
-    (when (and use-captcha? audible-captcha? (not (tool-exists? "espeak")))
-      (print "WARNING: `use-captcha?' indicates that audible captchas are enabled but espeak "
-             "doesn't seem to be installed. Disabling captchas.")
+      (set! use-captcha? #f)
       (set! audible-captcha? #f))
 
-    (set! espeak-available-languages (find-espeak-languages espeak-binary espeak-data-dir))
+    (when (and audible-captcha? (not (tool-exists? "espeak")))
+      (print "WARNING: `audible-captcha?' indicates that audible captchas are enabled but espeak "
+             "doesn't seem to be installed. Disabling audible captchas.")
+      (set! audible-captcha? #f))
+
+    (when audible-captcha?
+      (set! espeak-available-languages (find-espeak-languages espeak-binary espeak-data-dir)))
 
     (when (and force-vandusen-notification?
                (or (not vandusen-host)
