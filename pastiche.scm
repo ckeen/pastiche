@@ -401,7 +401,7 @@
           (div (@ (id "content"))
                (h1 (@ (id "heading")
                       (align "center"))
-                   "Welcome to the chicken scheme pasting service")
+                   "Welcome to the CHICKEN Scheme pasting service")
                (,(or (and-let* ((id ($ 'id))
                                 (annotate ($ 'annotate)))
                        (cond ((fetch-paste id)
@@ -575,8 +575,8 @@
       (lambda ()
         `(,(navigation-links)
           (div (@ (id "content"))
-               (h2 "You have reached the CHICKEN scheme pasting service")
-               (p "These pages are maintained by the CHICKEN scheme
+               (h2 "You have reached the CHICKEN Scheme pasting service")
+               (p "These pages are maintained by the CHICKEN Scheme
                    project team. Anyone that enters a correct CAPTCHA response is allowed
                    to post anything he likes. If you find objectionable content, feel
                    free to drop a mail at chicken-janitors <at> nongnu dot org")
