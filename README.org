@@ -1,3 +1,4 @@
+ [[https://saythanks.io/to/ckeen][Say thanks!]]
 * Pastiche -- a pastebin service written for CHICKEN Scheme
 
 This is a paste bin service similar to [[http://www.cliki.net/lisppaste][lisppaste]]. It supports IRC
