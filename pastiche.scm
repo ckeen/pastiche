@@ -157,6 +157,7 @@
                         (num-captchas 500)
                         (browsing-steps 15)
                         force-vandusen-notification?
+                        stealthy?
                         (awful-settings (lambda (_) (_))))
 
   (define (delete-and-refill-captchas clist captcha)
@@ -263,8 +264,10 @@
             (ul ,@(map (lambda (m)
                          `(li (a (@ (href ,(make-pathname base-path (car m))))
                                  ,(cdr m))))
-                       '(("" . "New Paste")
-                         ("browse" . "Browse")
+                       `(("" . "New Paste")
+                         ,@(if stealthy?
+                               '()
+                               '(("browse" . "Browse")))
                          ("search" . "Search")
                          ("about" . "What is this?"))))))
 
@@ -478,9 +481,11 @@
                                           (delete-and-refill-captchas captchas ($ 'captcha-hash))))
                                   `((h2 (@ (align "center")) "Thanks for your paste!")
                                     (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))
-                                    (p (@ (align "center"))
-                                       "Your paste can be reached with this url: "
-                                       (a (@ (href ,url)) ,url))))))))
+                                    ,@(if stealthy?
+                                          '()
+                                          '((p (@ (align "center"))
+                                               "Your paste can be reached with this url: "
+                                               (a (@ (href ,url)) ,url))))))))))
                      (else (bail-out "I am not storing empty pastes."))))))))
       css: (page-css)
       method: '(get head post))
@@ -514,38 +519,39 @@
       (let ((n ($db "select count(distinct(hash)) from pastes")))
         (and n (caar n))))
 
-    (define-page "browse"
-      (lambda ()
-        (with-request-variables ((from as-number)
-                                 (to as-number))
-          (let* ((nposts (number-of-posts))
-                 (from (if (and from (>= from 0) (<= from nposts)) from 0))
-                 (to (if (and to (> to from) (<= to nposts)) to browsing-steps))
-                 (older-to (min (+ to browsing-steps) nposts))
-                 (older-from (+ from browsing-steps))
-                 (newer-from (- from browsing-steps))
-                 (newer-to (max (- to browsing-steps) browsing-steps))
-                 (history-path (make-pathname base-path "browse")))
-            `(,(navigation-links)
-              (div (@ (id "content"))
-                   (h2 (@ (align "center")) "Browsing pastes")
-                   (div (@ (id "browse-navigation")
-                           (align "center"))
-                        ,(if (>= newer-from 0)
-                             `(a (@ (href ,(sprintf "~a?from=~a;to=~a"
-                                                    history-path
-                                                    newer-from newer-to)))
-                                 "< newer")
-                             "< newer")
-                        " ... "
-                        ,(if (and (not (= to nposts)) (<= older-to nposts))
-                             `(a (@ (href ,(sprintf "~a?from=~a;to=~a"
-                                                    history-path
-                                                    older-from
-                                                    older-to)))
-                                 "older >")
-                             "older >")
-                        ,(make-post-table browsing-steps offset: from))))))))
+    (unless stealthy?
+      (define-page "browse"
+        (lambda ()
+          (with-request-variables ((from as-number)
+                                   (to as-number))
+            (let* ((nposts (number-of-posts))
+                   (from (if (and from (>= from 0) (<= from nposts)) from 0))
+                   (to (if (and to (> to from) (<= to nposts)) to browsing-steps))
+                   (older-to (min (+ to browsing-steps) nposts))
+                   (older-from (+ from browsing-steps))
+                   (newer-from (- from browsing-steps))
+                   (newer-to (max (- to browsing-steps) browsing-steps))
+                   (history-path (make-pathname base-path "browse")))
+              `(,(navigation-links)
+                (div (@ (id "content"))
+                     (h2 (@ (align "center")) "Browsing pastes")
+                     (div (@ (id "browse-navigation")
+                             (align "center"))
+                          ,(if (>= newer-from 0)
+                               `(a (@ (href ,(sprintf "~a?from=~a;to=~a"
+                                                      history-path
+                                                      newer-from newer-to)))
+                                   "< newer")
+                               "< newer")
+                          " ... "
+                          ,(if (and (not (= to nposts)) (<= older-to nposts))
+                               `(a (@ (href ,(sprintf "~a?from=~a;to=~a"
+                                                      history-path
+                                                      older-from
+                                                      older-to)))
+                                   "older >")
+                               "older >")
+                          ,(make-post-table browsing-steps offset: from)))))))))
 
     (define-page "search"
       (lambda ()
