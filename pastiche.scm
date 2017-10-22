@@ -21,7 +21,8 @@
      extras
      irregex
      (srfi 1 13)
-     utf8)
+     utf8
+     uri-common)
 
 ;;;
 ;;; Utils
@@ -82,6 +83,16 @@
   (or (find (cut member <> available) (map (lambda (p) (symbol->string (car p))) preferences)) "en"))
 
 (define espeak-available-languages '())
+
+(define (is-it-spam? nick title paste)
+  (define (url? s)
+    (and-let* ((uri (uri-reference s)))
+         (uri-scheme uri)))
+
+  (or (url? nick)
+      (url? title)
+      (url? paste)))
+
 
 ;;;
 ;;; Captchas
@@ -456,31 +467,33 @@
                                                  "anonymous"
                                                  i))
                                            (list nick title time paste))))
-                            (if (string-null? paste)
-                                (bail-out "I am not storing empty pastes.")
-                                (begin
-                                  (cond ((fetch-paste id)
-                                         => (lambda (p)
-                                              (let ((count (+ 1 (length (cdr p)))))
-                                                (update-paste id snippet)
-                                                (set! url
-                                                      (make-pathname
-                                                       base-path
-                                                       (conc "paste?id=" id "#a" count))))))
-                                        (else (insert-paste hashsum snippet)
-                                              (set! url
-                                                    (make-pathname base-path
-                                                                   (string-append "paste?id=" hashsum)))))
-                                  (set! paste-title title)
-                                  (when ($ 'notify-irc) (notify nick title url))
-                                  (when use-captcha?
-                                    (set! captchas
-                                          (delete-and-refill-captchas captchas ($ 'captcha-hash))))
-                                  `((h2 (@ (align "center")) "Thanks for your paste!")
-                                    (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))
-                                    (p (@ (align "center"))
-                                       "Your paste can be reached with this url: "
-                                       (a (@ (href ,url)) ,url))))))))
+                            (cond ((string-null? paste)
+                                   (bail-out "I am not storing empty pastes."))
+                                  ((is-it-spam? nick title paste)
+                                   (bail-out "Sorry, you’re not allowed to do that."))
+                                  (else
+                                    (cond ((fetch-paste id)
+                                           => (lambda (p)
+                                                (let ((count (+ 1 (length (cdr p)))))
+                                                  (update-paste id snippet)
+                                                  (set! url
+                                                    (make-pathname
+                                                      base-path
+                                                      (conc "paste?id=" id "#a" count))))))
+                                          (else (insert-paste hashsum snippet)
+                                            (set! url
+                                              (make-pathname base-path
+                                                             (string-append "paste?id=" hashsum)))))
+                                    (set! paste-title title)
+                                    (when ($ 'notify-irc) (notify nick title url))
+                                    (when use-captcha?
+                                      (set! captchas
+                                        (delete-and-refill-captchas captchas ($ 'captcha-hash))))
+                                    `((h2 (@ (align "center")) "Thanks for your paste!")
+                                      (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))
+                                      (p (@ (align "center"))
+                                         "Your paste can be reached with this url: "
+                                         (a (@ (href ,url)) ,url))))))))
                      (else (bail-out "I am not storing empty pastes."))))))))
       css: (page-css)
       method: '(get head post))
