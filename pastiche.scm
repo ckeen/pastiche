@@ -475,8 +475,9 @@
                             (cond ((string-null? paste)
                                    (bail-out "I am not storing empty pastes."))
                                   ((is-it-spam? nick title paste)
+                                   (when ($ 'notify-irc) (notify nick "spam" "but I wouldn't let'em"))
                                    `((h2 (@ (align "center")) "Thanks for your paste!")
-                                      (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
+                                     (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
                                   (else
                                     (cond ((fetch-paste id)
                                            => (lambda (p)
