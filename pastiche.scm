@@ -87,11 +87,16 @@
 (define (is-it-spam? nick title paste)
   (define (url? s)
     (and-let* ((uri (uri-reference s)))
-         (uri-scheme uri)))
-
-  (or (url? nick)
-      (url? title)
-      (url? paste)))
+              (uri-scheme uri)))
+  (define (too-many? txt spam-ratio)
+    (let* ((tokens (string-split txt))
+           (100% (length tokens))
+           (url-count (length (filter url? tokens))))
+      (and (not (zero? 100%))
+           (< spam-ratio (/ url-count 100%)))))
+  (or (too-many? nick 0)
+      (too-many? title 0)
+      (too-many? paste 0.1)))
 
 
 ;;;
@@ -470,7 +475,8 @@
                             (cond ((string-null? paste)
                                    (bail-out "I am not storing empty pastes."))
                                   ((is-it-spam? nick title paste)
-                                   (bail-out "Sorry, you’re not allowed to do that."))
+                                   `((h2 (@ (align "center")) "Thanks for your paste!")
+                                      (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
                                   (else
                                     (cond ((fetch-paste id)
                                            => (lambda (p)
