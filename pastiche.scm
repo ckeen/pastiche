@@ -86,8 +86,9 @@
 
 (define (is-it-spam? nick title paste)
   (define (url? s)
-    (and-let* ((uri (uri-reference s)))
-              (uri-scheme uri)))
+    (and-let* ((uri (uri-reference s))
+               (s (uri-scheme uri)))
+              (member s '(http https))))
   (define (too-many? txt spam-ratio)
     (let* ((tokens (string-split txt))
            (100% (length tokens))
@@ -96,7 +97,7 @@
            (< spam-ratio (/ url-count 100%)))))
   (or (too-many? nick 0)
       (too-many? title 0)
-      (too-many? paste 0.1)))
+      (too-many? paste 0.2)))
 
 
 ;;;
