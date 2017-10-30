@@ -90,7 +90,7 @@
                (s (uri-scheme uri)))
               (member s '(http https))))
   (define (too-many? txt spam-ratio)
-    (let* ((tokens (string-split txt))
+    (let* ((tokens (string-split txt (string #\tab #\newline #\space #\return)))
            (100% (length tokens))
            (url-count (length (filter url? tokens))))
       (and (not (zero? 100%))
