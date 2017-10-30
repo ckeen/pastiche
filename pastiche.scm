@@ -224,18 +224,23 @@
         (exec (sql db "create virtual table searchable using fts3(hash, author, title, time, paste)"))
         (close-database db)))
 
+    (define (send-to-irc str)
+      (when vandusen-host
+        (ignore-errors
+         (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
+           (display (string-append "#chicken " str) o)
+           (newline o)
+           (close-input-port i)
+           (close-output-port o)))))
+
     (define (notify nick title url)
       (when vandusen-host
         (let ((cleaned-nick (with-input-from-string nick html-strip))
               (cleaned-title (with-input-from-string title html-strip)))
             (ignore-errors
-             (let ((stuff (sprintf "#chicken ~s pasted ~s ~a"
+             (let ((stuff (sprintf "~s pasted ~s ~a"
                                    cleaned-nick cleaned-title (if (string-null? url) "" (make-pathname base-url url)))))
-               (let-values (((i o) (tcp-connect vandusen-host vandusen-port)))
-                           (display stuff o)
-                           (newline o)
-                           (close-input-port i)
-                           (close-output-port o)))))))
+               (send-to-irc stuff))))))
 
 
     (define (matching-pastes query)
@@ -476,7 +481,7 @@
                             (cond ((string-null? paste)
                                    (bail-out "I am not storing empty pastes."))
                                   ((is-it-spam? nick title paste)
-                                   (when ($ 'notify-irc) (notify nick "spam, but I wouldn't let'em" ""))
+                                   (when ($ 'notify-irc) (send-to-irc "SPAM! SPAM! SPAM!"))
                                    `((h2 (@ (align "center")) "Thanks for your paste!")
                                      (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
                                   (else
