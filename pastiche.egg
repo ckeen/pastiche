@@ -1,0 +1,8 @@
+;; -*- scheme -*-
+((author "Christian Kellermann")
+ (synopsis "A small awful app implementing a pastebin service")
+ (license "bsd")
+ (category web)
+ (dependencies awful awful-sql-de-lite simple-sha1 intarweb html-parser colorize miscmacros utf8)
+ (test-dependencies http-client test server-test sxpath)
+ (components (extension pastiche) (linkage static)))

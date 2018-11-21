@@ -1,8 +1,8 @@
 (module pastiche (pastiche)
 
-(import chicken scheme)
+(import (chicken base) scheme)
 
-(use awful
+(import awful
      colorize
      html-parser
      intarweb
@@ -10,17 +10,25 @@
      simple-sha1
      sql-de-lite
      spiffy
-     tcp
+     (chicken tcp)
      awful-sql-de-lite
      sql-de-lite
-     files
-     ports
-     posix
-     data-structures
-     utils
-     extras
-     irregex
-     (srfi 1 13)
+     (chicken file)
+     (chicken port)
+     (chicken irregex)
+     (chicken pathname)
+     (chicken format)
+     (chicken process)
+     (chicken time posix)
+     (chicken time)
+     (chicken string)
+     (chicken io)
+     (chicken platform)
+     (chicken process-context)
+     (chicken sort)
+     (chicken random)
+     srfi-1
+     srfi-13
      utf8
      uri-common)
 
@@ -103,7 +111,9 @@
 ;;;
 ;;; Captchas
 ;;;
+
 (define-record captcha string figlet)
+(define captchas #f)
 
 (define (tool-exists? tool)
   (let ((paths (string-split (get-environment-variable "PATH")
@@ -128,15 +138,15 @@
       (lambda ()
         (list->string
          (let loop ((n (+ min-captcha-len
-                          (random (- max-captcha-len
+                          (pseudo-random-integer (- max-captcha-len
                                      min-captcha-len)))))
            (if (zero? n)
                '()
-               (cons (vector-ref chars (random chars-len))
+               (cons (vector-ref chars (pseudo-random-integer chars-len))
                      (loop (- n 1)))))))))
 
   (define (figlet str)
-    (call-with-input-pipe (string-append "figlet " str) read-all))
+    (call-with-input-pipe (string-append "figlet " str) (lambda (port) (read-string #f port))))
 
   (let loop ((n (sub1 num)))
     (if (zero? n)
@@ -149,14 +159,14 @@
            (loop (- n 1)))))))
 
 (define (get-captcha captchas)
-  (list-ref captchas (random (length captchas))))
+  (list-ref captchas (pseudo-random-integer (length captchas))))
 
 (define (string-as-wav espeak-binary s preferred-languages)
   (let-values (((in out pid) (process espeak-binary `("-s 10" "--stdout" "-v"
                                                  ,(select-preferred-language espeak-available-languages preferred-languages)))))
     (fprintf out "~s" (list->string (intersperse (string->list s) #\space)))
     (close-output-port out)
-    (let ((r (read-all in)))
+    (let ((r (read-string #f in)))
       (close-input-port in)
       r)))
 
@@ -215,7 +225,7 @@
       (error 'pastiche
              "`force-vandusen-notification?' requires both `vandusen-host' and `vandusen-port' to be set."))
 
-    (define captchas (and use-captcha? (create-captchas num-captchas)))
+    (set! captchas (and use-captcha? (create-captchas num-captchas)))
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
