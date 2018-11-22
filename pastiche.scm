@@ -394,7 +394,7 @@
                  (sprintf "~a hours ago" hrs)))
               ((fits 60 (* 60 5)) => (lambda (m) (sprintf "~a minutes ago" m)))
               ((fits 1 120) => (lambda (_) (sprintf "just now!")))
-              (else (sprintf "on ~a" (seconds->string t))))))
+              (else (sprintf "on ~a" (seconds->string (inexact->exact t)))))))
 
     (define (print-snippet s #!key annotation? (count 0))
       `((div (@ (class "paste-header"))
