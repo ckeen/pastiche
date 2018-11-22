@@ -1,6 +1,6 @@
 (include "pastiche.scm")
 (import pastiche)
-(use awful doctype)
+(import awful doctype)
 
 (pastiche "/" "paste.db"
           awful-settings:
