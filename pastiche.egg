@@ -4,5 +4,5 @@
  (license "bsd")
  (category web)
  (dependencies awful awful-sql-de-lite simple-sha1 intarweb html-parser colorize miscmacros utf8)
- (test-dependencies http-client test server-test sxpath)
+ (test-dependencies srfi-1 srfi-13 http-client test server-test sxpath)
  (components (extension pastiche) (linkage static)))

@@ -1,4 +1,4 @@
-(use test http-client posix setup-api intarweb uri-common awful html-parser sxpath)
+(import (chicken pathname) (chicken io) test http-client intarweb uri-common awful html-parser sxpath srfi-1 srfi-13)
 
 (define server-uri "http://localhost:8080")
 
@@ -8,7 +8,7 @@
               (make-pathname server-uri path/vars)
               #f
               read-string)))
-    (close-all-connections!)
+    (close-idle-connections!)
     val))
 
 
@@ -19,7 +19,7 @@
                method: 'POST)
               data
               read-string)))
-    (close-all-connections!)
+    (close-idle-connections!)
     val))
 
 
@@ -72,6 +72,6 @@
 
 (test "Checking HTML paste (view paste)"
       '("a " "<" "special html chars" ">" " paste")
-      (get-paste-from-html (get paste-link)))
+      (begin (sleep 1)(get-paste-from-html (get paste-link))))
 
 (test-end "pastiche")

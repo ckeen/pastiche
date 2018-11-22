@@ -1,4 +1,4 @@
-(use awful pastiche server-test)
+(import (chicken file) awful pastiche server-test)
 
 (define pastiche-db "pastiche.db")
 
