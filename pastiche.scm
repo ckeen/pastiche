@@ -447,7 +447,8 @@
 
     (define-page "paste"
       (lambda ()
-        (let ((paste-title "Untitled paste"))
+        (let ((paste-title "Untitled paste")
+              (method (request-method (current-request))))
           (set-page-title! paste-title)
           (with-request-variables ((nick  (nonempty as-string))
                                    (title (nonempty as-string))
@@ -455,69 +456,69 @@
                                    (id    (nonempty as-string)))
             `(,(navigation-links)
 	      (div (@ (id "content"))
-                   ,(cond
-                     ((and id (not paste))
-                      (cond ((fetch-paste id)
-                             => (lambda (p)
-                                  (set! paste-title (third (last p)))
-                                  (set-page-title! paste-title)
-                                  `(,(format-all-snippets p)
-                                    (div (@ (id "paste-footer"))
-                                         (h2 (@ (align "center"))
-                                             (a (@ (href ,(sprintf "~a?id=~a;annotate=t"
-                                                                   base-path
-                                                                   id)))
-                                                "Annotate this paste!"))))))
-                            (else (bail-out "Could not find a paste with this id: " id))))
-                     (paste
-                      (if (and use-captcha?
-                               (not (equal? ($ 'captcha-user-answer)
-                                            (and-let* ((hash ($ 'captcha-hash))
-                                                       (captcha (alist-ref hash captchas equal?)))
-                                              (captcha-string captcha)))))
-                          (bail-out "Wrong captcha answer.")
-                          (let* ((nick (or nick "anonymous"))
-                                 (title (or title "no title"))
-                                 (time (current-seconds))
-                                 (hashsum (string->sha1sum
-                                           (conc nick title time paste)))
-                                 (url '())
-                                 (snippet (map
-                                           (lambda (i)
-                                             (if (and (string? i) (string-null? i))
-                                                 "anonymous"
-                                                 i))
-                                           (list nick title time paste))))
-                            (cond ((string-null? paste)
-                                   (bail-out "I am not storing empty pastes."))
-                                  ((is-it-spam? nick title paste)
-                                   (when ($ 'notify-irc) (send-to-irc "SPAM! SPAM! SPAM!"))
-                                   `((h2 (@ (align "center")) "Thanks for your paste!")
-                                     (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
-                                  (else
-                                    (cond ((fetch-paste id)
-                                           => (lambda (p)
-                                                (let ((count (+ 1 (length (cdr p)))))
-                                                  (update-paste id snippet)
-                                                  (set! url
-                                                    (make-pathname
-                                                      base-path
-                                                      (conc "paste?id=" id "#a" count))))))
-                                          (else (insert-paste hashsum snippet)
-                                            (set! url
-                                              (make-pathname base-path
-                                                             (string-append "paste?id=" hashsum)))))
-                                    (set! paste-title title)
-                                    (when ($ 'notify-irc) (notify nick title url))
-                                    (when use-captcha?
-                                      (set! captchas
-                                        (delete-and-refill-captchas captchas ($ 'captcha-hash))))
-                                    `((h2 (@ (align "center")) "Thanks for your paste!")
-                                      (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))
-                                      (p (@ (align "center"))
-                                         "Your paste can be reached with this url: "
-                                         (a (@ (href ,url)) ,url))))))))
-                     (else (bail-out "I am not storing empty pastes."))))))))
+                   ,(if (eqv? method 'POST)
+                        (if paste
+                            (if (and use-captcha?
+                                     (not (equal? ($ 'captcha-user-answer)
+                                                  (and-let* ((hash ($ 'captcha-hash))
+                                                             (captcha (alist-ref hash captchas equal?)))
+                                                    (captcha-string captcha)))))
+                                (bail-out "Wrong captcha answer.")
+                                (let* ((nick (or nick "anonymous"))
+                                       (title (or title "no title"))
+                                       (time (current-seconds))
+                                       (hashsum (string->sha1sum
+                                                 (conc nick title time paste)))
+                                       (url '())
+                                       (snippet (map
+                                                 (lambda (i)
+                                                   (if (and (string? i) (string-null? i))
+                                                       "anonymous"
+                                                       i))
+                                                 (list nick title time paste))))
+                                  (cond ((string-null? paste)
+                                         (bail-out "I am not storing empty pastes."))
+                                        ((is-it-spam? nick title paste)
+                                         (when ($ 'notify-irc) (send-to-irc "SPAM! SPAM! SPAM!"))
+                                         `((h2 (@ (align "center")) "Thanks for your paste!")
+                                           (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
+                                        (else
+                                         (cond ((fetch-paste id)
+                                                => (lambda (p)
+                                                     (let ((count (+ 1 (length (cdr p)))))
+                                                       (update-paste id snippet)
+                                                       (set! url
+                                                             (make-pathname
+                                                              base-path
+                                                              (conc "paste?id=" id "#a" count))))))
+                                               (else (insert-paste hashsum snippet)
+                                                     (set! url
+                                                           (make-pathname base-path
+                                                                          (string-append "paste?id=" hashsum)))))
+                                         (set! paste-title title)
+                                         (when ($ 'notify-irc) (notify nick title url))
+                                         (when use-captcha?
+                                           (set! captchas
+                                                 (delete-and-refill-captchas captchas ($ 'captcha-hash))))
+                                         `((h2 (@ (align "center")) "Thanks for your paste!")
+                                           (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))
+                                           (p (@ (align "center"))
+                                              "Your paste can be reached with this url: "
+                                              (a (@ (href ,url)) ,url))))))))
+                     (if id
+                         (cond ((fetch-paste id)
+                                => (lambda (p)
+                                     (set! paste-title (third (last p)))
+                                     (set-page-title! paste-title)
+                                     `(,(format-all-snippets p)
+                                       (div (@ (id "paste-footer"))
+                                            (h2 (@ (align "center"))
+                                                (a (@ (href ,(sprintf "~a?id=~a;annotate=t"
+                                                                      base-path
+                                                                      id)))
+                                                   "Annotate this paste!"))))))
+                               (else (bail-out "Could not find a paste with this id: " id)))
+                         (bail-out "Missing parameter: id"))))))))
       css: (page-css)
       method: '(get head post))
 
