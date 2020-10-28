@@ -273,7 +273,7 @@
 
 ; old "select * from pastes order by time desc limit ?,?"
     (define (fetch-last-pastes count #!key (offset 0))
-      (let ((r ($db "select * from pastes p where time = (select min(time) from pastes p2 where p2.hash=p.hash) order by time desc limit ?,?" values: (list offset count))))
+      (let ((r ($db "select hash, author, title, min(time), paste from pastes group by hash order by time desc limit ?,?" values: (list offset count))))
         r))
 
     (define (make-post-table n #!key (offset 0))
