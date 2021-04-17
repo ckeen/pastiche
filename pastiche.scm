@@ -491,7 +491,7 @@
                                   (cond ((string-null? paste)
                                          (bail-out "I am not storing empty pastes."))
                                         ((is-it-spam? nick title paste)
-                                         (when ($ 'notify-irc) (send-to-irc "SPAM! SPAM! SPAM!"))
+                                         (when ($ 'notify-irc) (send-to-irc (string-append "SPAM! SPAM! SPAM! by " nick)))
                                          `((h2 (@ (align "center")) "Thanks for your paste!")
                                            (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
                                         (else
