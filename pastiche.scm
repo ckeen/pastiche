@@ -92,20 +92,27 @@
 
 (define espeak-available-languages '())
 
+(define bad-words '())
+(define bad-words-irx #f)
+
 (define (is-it-spam? nick title paste)
   (define (url? s)
     (and-let* ((uri (uri-reference s))
                (s (uri-scheme uri)))
-              (member s '(http https))))
+      (member s '(http https))))
+  (define (bad-word? s)
+    (and bad-words-irx (irregex-search bad-words-irx s)))
+  (define (spam-token? s)
+    (or (url? s) (bad-word? s)))
   (define (too-many? txt spam-ratio)
     (let* ((tokens (string-split txt (string #\tab #\newline #\space #\return)))
            (100% (length tokens))
-           (url-count (length (filter url? tokens))))
+           (hits (length (filter spam-token? tokens))))
       (and (not (zero? 100%))
-           (< spam-ratio (/ url-count 100%)))))
-  (or (too-many? nick 0)
-      (too-many? title 0)
-      (too-many? paste 0.2)))
+           (< spam-ratio (/ hits 100%)))))
+  (or (too-many? nick spam-token? 0)
+      (too-many? title spam-token? 0)
+      (too-many? paste spam-token? 0.2)))
 
 
 ;;;
@@ -181,6 +188,7 @@
                         (audible-captcha? use-captcha?)
                         (espeak-binary "espeak")
                         (espeak-data-dir #f)
+                        (bad-words-path #f)
                         (num-captchas 500)
                         (browsing-steps 15)
                         force-vandusen-notification?
@@ -226,6 +234,10 @@
              "`force-vandusen-notification?' requires both `vandusen-host' and `vandusen-port' to be set."))
 
     (set! captchas (and use-captcha? (create-captchas num-captchas)))
+
+    (when bad-words-path
+      (set! bad-words (call-with-input-file bad-words-path read-lines))
+      (set! bad-words-irx (irregex `(: (w/nocase (or ,@bad-words))))))
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
