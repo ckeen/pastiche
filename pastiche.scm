@@ -110,9 +110,9 @@
            (hits (length (filter spam-token? tokens))))
       (and (not (zero? 100%))
            (< spam-ratio (/ hits 100%)))))
-  (or (too-many? nick spam-token? 0)
-      (too-many? title spam-token? 0)
-      (too-many? paste spam-token? 0.2)))
+  (or (too-many? nick 0)
+      (too-many? title 0)
+      (too-many? paste 0.2)))
 
 
 ;;;
