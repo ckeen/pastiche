@@ -24,11 +24,8 @@ It is also possible to run pastiche without having to install the
 module. This is useful if you are working on pastiche itself. To do so
 install all the required modules first:
 
- $ chicken-install awful:0.39 awful-sql-de-lite:0.4 simple-sha1:0.1 colorize miscmacros utf8
+ $ chicken-install -n
  $ awful --development-mode example-app.scm
-
-/Note:/ The versions required may have changed in the meantime, please
-have a look at the depends clause in the pastiche.meta file.
 
 * License
 
