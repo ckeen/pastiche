@@ -92,10 +92,8 @@
 
 (define espeak-available-languages '())
 
-(define bad-words '())
-(define bad-words-irx #f)
-
-(define (is-it-spam? nick title paste)
+(define (is-it-spam? nick title paste bad-words-irx)
+  ;; bad-words-irx is either a regex or #f
   (define (url? s)
     (and-let* ((uri (uri-reference s))
                (s (uri-scheme uri)))
@@ -235,9 +233,10 @@
 
     (set! captchas (and use-captcha? (create-captchas num-captchas)))
 
-    (when bad-words-path
-      (set! bad-words (call-with-input-file bad-words-path read-lines))
-      (set! bad-words-irx (irregex `(: (w/nocase (or ,@bad-words))))))
+    (define bad-words-irx
+      (and bad-words-path
+           (let ((bad-words (call-with-input-file bad-words-path read-lines)))
+             (irregex `(: (w/nocase (or ,@bad-words)))))))
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
@@ -490,7 +489,7 @@
                                                  (list nick title time paste))))
                                   (cond ((string-null? paste)
                                          (bail-out "I am not storing empty pastes."))
-                                        ((is-it-spam? nick title paste)
+                                        ((is-it-spam? nick title paste bad-words-irx)
                                          (when ($ 'notify-irc) (send-to-irc (string-append "SPAM! SPAM! SPAM! by " nick)))
                                          `((h2 (@ (align "center")) "Thanks for your paste!")
                                            (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))

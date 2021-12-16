@@ -23,4 +23,5 @@
  (lambda ()
    (load "client.scm")))
 
+(delete-file* pastiche-db)
 (test-exit)

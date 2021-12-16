@@ -13,7 +13,7 @@ Using a recent CHICKEN scheme version (>4.6.0), do
  2. cd pastiche
  3. chicken-install -s
 
-This will fetch all dependencies and installs pastiche and awful.
+This will fetch all dependencies and install pastiche and awful.
 To run it load the example-app in awful:
 
  $ awful --development-mode example-app
@@ -24,11 +24,8 @@ It is also possible to run pastiche without having to install the
 module. This is useful if you are working on pastiche itself. To do so
 install all the required modules first:
 
- $ chicken-install awful:0.39 awful-sql-de-lite:0.4 simple-sha1:0.1 colorize miscmacros utf8
+ $ chicken-install -n
  $ awful --development-mode example-app.scm
-
-/Note:/ The versions required may have changed in the meantime, please
-have a look at the depends clause in the pastiche.meta file.
 
 * License
 
@@ -61,5 +58,3 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
