@@ -13,7 +13,7 @@ Using a recent CHICKEN scheme version (>4.6.0), do
  2. cd pastiche
  3. chicken-install -s
 
-This will fetch all dependencies and installs pastiche and awful.
+This will fetch all dependencies and install pastiche and awful.
 To run it load the example-app in awful:
 
  $ awful --development-mode example-app
@@ -58,5 +58,3 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-
