@@ -92,7 +92,6 @@
 
 (define espeak-available-languages '())
 
-(define bad-words '())
 (define bad-words-irx #f)
 
 (define (is-it-spam? nick title paste)
@@ -236,8 +235,8 @@
     (set! captchas (and use-captcha? (create-captchas num-captchas)))
 
     (when bad-words-path
-      (set! bad-words (call-with-input-file bad-words-path read-lines))
-      (set! bad-words-irx (irregex `(: (w/nocase (or ,@bad-words))))))
+      (let ((bad-words (call-with-input-file bad-words-path read-lines)))
+        (set! bad-words-irx (irregex `(: (w/nocase (or ,@bad-words)))))))
 
     ;; The database needs to be initialised once
     (unless (file-exists? db-file)
