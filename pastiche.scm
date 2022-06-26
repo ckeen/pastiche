@@ -114,6 +114,12 @@
       (too-many? title 0)
       (too-many? paste 0.2)))
 
+(define (maybe-remove-spam-from-nick nick)
+  ;; If nick contains a slash, most likely a spammer pasted a URL in
+  ;; the Author field
+  (if (substring-index "/" nick)
+      "<omitted, as it may be spam>"
+      nick))
 
 ;;;
 ;;; Captchas
@@ -491,7 +497,10 @@
                                   (cond ((string-null? paste)
                                          (bail-out "I am not storing empty pastes."))
                                         ((is-it-spam? nick title paste)
-                                         (when ($ 'notify-irc) (send-to-irc (string-append "SPAM! SPAM! SPAM! by " nick)))
+                                         (when ($ 'notify-irc)
+                                           (send-to-irc
+                                            (string-append "SPAM! SPAM! SPAM! by "
+                                                           (maybe-remove-spam-from-nick nick))))
                                          `((h2 (@ (align "center")) "Thanks for your paste!")
                                            (p "Hi " ,nick ", thanks for pasting: " (em ,title) (br))))
                                         (else
